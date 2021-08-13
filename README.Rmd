@@ -1,0 +1,20 @@
+---
+output: github_document
+bibliography: 
+ - packages.bib
+ - references.bib
+---
+
+```{r, warning=FALSE, include = FALSE}
+#Automatically write R package citation entries to a .bib file
+knitr::write_bib(c(.packages(), 
+                   'chillR',
+                   'devtools',
+                   'dormancyR'), 'packages.bib')
+```
+
+# Phenoflex approach with experimental phenology data
+
+In this repository I will implement the phenoflex approach [@Luedeling2021] to phenology data generated in our experiment at Campus Klein-Altendorf of the University of Bonn.
+
+# References
