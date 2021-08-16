@@ -342,7 +342,7 @@ heat_response_plot <- ggplot(filter(temp_response, Var == "Heat_res"), aes(Temp,
 
 # Use patchwork syntax and functionality to merge the plots
 (chill_response_plot + heat_response_plot) + plot_annotation(caption = "Temperature") &
-  theme(plot.caption = element_text(hjust = 0.5, size = 11))
+  theme(plot.caption = element_text(hjust = 0.5, vjust = 1, size = 11))
 
 # Save the final plot to folder
 ggsave("figures/temp_responses.png", width = 12, height = 10, units = "cm", dpi = 600)
