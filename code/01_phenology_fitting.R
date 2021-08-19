@@ -2,6 +2,13 @@ library(chillR)
 library(tidyverse)
 library(patchwork)
 
+# For reproducibility, this part will set the seed for pseudo random number generator. In theory, I will run this code
+# only in the final version of the analysis. In the meanwhile, results will differ every time. Use system time to avoid
+# anchoring the seed selection
+seed <- as.integer(Sys.time()) %% 100000
+set.seed(88648)
+
+
 # This script will run the PhenoFlex approach using the phenology data collected in our experiment at campus Klein-Altendorf.
 # Since the data for pears only contains 32 different treatments, I will only analyze the data for apples (66 seasons).
 # I will implement two versions of the analysis. The first one will use all experimental seasons minus 2 seasons that 
@@ -46,16 +53,17 @@ colnames(pheno_v2) <- c("Year", "pheno")
 
 
 # Define a vector of calibration and validation seasons (20% of the seasons)
-calibration_seasons_v1 <- sort(sample(pheno_v1$Year, round(nrow(pheno_v1) * 0.75), replace = FALSE))
-validation_seasons_v1 <- sort(pheno_v1[!(pheno_v1$Year %in% calibration_seasons_v1), "Year"])
+calibration_seasons <- sort(sample(pheno_v2$Year, round(nrow(pheno_v2) * 0.75), replace = FALSE))
+calibration_seasons_v1 <- sort(c(calibration_seasons, pheno_v1$Year[which(!(pheno_v1$Year %in% pheno_v2$Year))]))
+validation_seasons <- sort(pheno_v2[!(pheno_v2$Year %in% calibration_seasons), "Year"])
 
-calibration_seasons_v2 <- sort(sample(pheno_v2$Year, round(nrow(pheno_v2) * 0.75), replace = FALSE))
-validation_seasons_v2 <- sort(pheno_v2[!(pheno_v2$Year %in% calibration_seasons_v2), "Year"])
+calibration_seasons_v2 <- calibration_seasons
+
 
 
 # Set the initial parameters (wide ranges)
 par <-   c(40, 190, 0.5, 25, 3372.8,  9900.3, 6319.5, 5.939917e13,  4, 36,  4,  1.60)
-upper <- c(80, 500, 1.0, 30, 4000.0, 10000.0, 7000.0,       6.e13, 10, 40, 10, 20.00)
+upper <- c(80, 500, 1.0, 30, 4000.0, 10000.0, 7000.0,       6.e13, 10, 40, 10, 50.00)
 lower <- c(20, 100, 0.1, 0 , 3000.0,  9000.0, 6000.0,       5.e13,  0,  0,  0,  0.05)
 
 
@@ -111,6 +119,14 @@ mean(out_df_v2$Error)
 mean(abs(out_df_v1$Error))
 mean(abs(out_df_v2$Error))
 
+# Compute the AICc
+aic_fit_v1 <- (2 * length(par)) + (length(calibration_seasons_v1) * 
+                                     log(pheno_fit_v1$model_fit$value / length(calibration_seasons_v1))) + ((2 * length(par)^2 + 2 * length(par)) /
+                                                                                                              length(calibration_seasons_v1) - length(par) - 1)
+aic_fit_v2 <- (2 * length(par)) + (length(calibration_seasons_v2) * 
+                                     log(pheno_fit_v2$model_fit$value / length(calibration_seasons_v2))) + ((2 * length(par)^2 + 2 * length(par)) /
+                                                                                                              length(calibration_seasons_v2) - length(par) - 1)
+
 # Plot the observed versus predicted values
 ggplot(out_df_v1, aes(pheno, Predicted)) +
   geom_point() +
@@ -125,23 +141,22 @@ ggplot(out_df_v2, aes(pheno, Predicted)) +
 
 # Compute the bloom dates for the validation datasets
 # Generate a validation data set with phenology data
-valid_df_v1 <- pheno_v1[pheno_v1$Year %in% validation_seasons_v1, ]
-valid_df_v2 <- pheno_v2[pheno_v2$Year %in% validation_seasons_v2, ]
+valid_df_v1 <- pheno_v1[pheno_v1$Year %in% validation_seasons, ]
+valid_df_v2 <- pheno_v2[pheno_v2$Year %in% validation_seasons, ]
 
 # Generate a list of seasons with weather data for the validation procedure
-valid_season_list_v1 <- genSeasonList(data, mrange = c(9, 7), years = validation_seasons_v1)
-valid_season_list_v2 <- genSeasonList(data, mrange = c(9, 7), years = validation_seasons_v2)
+valid_season_list <- genSeasonList(data, mrange = c(9, 7), years = validation_seasons)
 
 # Estimate the bloom dates with PhenoFlexGDHwrapper
 for (i in 1 : nrow(valid_df_v1)) {
   
-  valid_df_v1[i, "Predicted"] <- PhenoFlex_GDHwrapper(valid_season_list_v1[[i]], pheno_fit_v1$par)
+  valid_df_v1[i, "Predicted"] <- PhenoFlex_GDHwrapper(valid_season_list[[i]], pheno_fit_v1$par)
 }
 
 # The same for the second version
 for (i in 1 : nrow(valid_df_v2)) {
   
-  valid_df_v2[i, "Predicted"] <- PhenoFlex_GDHwrapper(valid_season_list_v2[[i]], pheno_fit_v2$par)
+  valid_df_v2[i, "Predicted"] <- PhenoFlex_GDHwrapper(valid_season_list[[i]], pheno_fit_v2$par)
 }
 
 # Compute the error (observed - predicted)
@@ -149,8 +164,8 @@ valid_df_v1[["Error"]] <- valid_df_v1$pheno - valid_df_v1$Predicted
 valid_df_v2[["Error"]] <- valid_df_v2$pheno - valid_df_v2$Predicted
 
 # Estimate the RMSEP
-RMSEP_valid_v1 <- RMSEP(valid_df_v1$pheno, valid_df_v1$Predicted)
-RMSEP_valid_v2 <- RMSEP(valid_df_v2$pheno, valid_df_v2$Predicted)
+RMSEP_valid_v1 <- RMSEP(valid_df_v1$pheno, valid_df_v1$Predicted, na.rm = TRUE)
+RMSEP_valid_v2 <- RMSEP(valid_df_v2$pheno, valid_df_v2$Predicted, na.rm = TRUE)
 
 # Plot the calibrated and validated 
 ggplot(out_df_v1, aes(pheno, Predicted)) +
@@ -212,7 +227,7 @@ for (k in 1 : length(fit_res_boot_v1$res)) {
   
   for (i in 1 : nrow(valid_df_v1)) {
   
-  valid_df_v1[i, name] <- PhenoFlex_GDHwrapper(valid_season_list_v1[[i]], par_k)
+  valid_df_v1[i, name] <- PhenoFlex_GDHwrapper(valid_season_list[[i]], par_k)
   }
 }
 
@@ -225,7 +240,7 @@ for (k in 1 : length(fit_res_boot_v2$res)) {
   
   for (i in 1 : nrow(valid_df_v2)) {
     
-    valid_df_v2[i, name] <- PhenoFlex_GDHwrapper(valid_season_list_v2[[i]], par_k)
+    valid_df_v2[i, name] <- PhenoFlex_GDHwrapper(valid_season_list[[i]], par_k)
   }
 }
 
@@ -245,9 +260,11 @@ valid_df <- bind_rows("Version 1" = valid_df_v1, "Version 2" = valid_df_v2, .id 
 
 # Create a data set that computes de RSMEP for each facet
 RMSEP_text <- data.frame(pheno = 48,
-                         Predicted = c(153, 148, 153, 148, 148),
-                         Version = c("Version 1", "Version 1", "Version 2", "Version 2", "Version 2"),
-                         Dataset = c("Calibration", "Validation", "Calibration", "Validation", "Validation"))
+                         Predicted = c(153, 148, 143, 153, 148, 143, 143),
+                         Version = c("Version 1", "Version 1", "Version 1", "Version 2",
+                                     "Version 2", "Version 2", "Version 2"),
+                         Dataset = c("Calibration", "Validation", "Calibration", "Validation",
+                                     "Calibration", "Validation", "Validation"))
 
 # Plot all results including the error for the validation dots
 ggplot() +
@@ -257,10 +274,12 @@ ggplot() +
                   aes(pheno, Predicted, ymin = Predicted - SD_boot, ymax = Predicted + SD_boot, color = "Validation"), 
                   size = 0.3, fatten = 0.1) +
   geom_text(data = RMSEP_text,  aes(pheno, Predicted),
-            label = c(bquote("RMSEP"["calib"]*": "*.(round(RMSEP_calib_v1, 2))),
-                      bquote("RMSEP"["valid"]*": "*.(round(RMSEP_valid_v1, 2))),
-                      bquote("RMSEP"["calib"]*": "*.(round(RMSEP_calib_v2, 2))),
-                      bquote("RMSEP"["valid"]*": "*.(round(RMSEP_valid_v2, 2))),
+            label = c(bquote("RMSEP"["calib"]*": "*.(round(RMSEP_calib_v1, 1))),
+                      bquote("RMSEP"["valid"]*": "*.(round(RMSEP_valid_v1, 1))),
+                      bquote("AICc"["calib"]*"     : "*.(round(aic_fit_v1, 1))),
+                      bquote("RMSEP"["calib"]*": "*.(round(RMSEP_calib_v2, 1))),
+                      bquote("RMSEP"["valid"]*": "*.(round(RMSEP_valid_v2, 1))),
+                      bquote("AICc"["calib"]*"     : "*.(round(aic_fit_v2, 1))),
                       expression("")),
             hjust = 0, size = 2.5, fontface = "italic") +
   scale_x_continuous(breaks = seq(50, 125, 25),
@@ -284,7 +303,7 @@ ggplot() +
         legend.text = element_text(size = 8))
 
 # Save the final plot to folder
-ggsave("figures/model_performance.png", width = 12, height = 10, units = "cm", dpi = 600)
+ggsave("figures/model_performance_d.png", width = 12, height = 10, units = "cm", dpi = 600)
 
 
 
@@ -345,6 +364,6 @@ heat_response_plot <- ggplot(filter(temp_response, Var == "Heat_res"), aes(Temp,
   theme(plot.caption = element_text(hjust = 0.5, vjust = 1, size = 11))
 
 # Save the final plot to folder
-ggsave("figures/temp_responses.png", width = 12, height = 10, units = "cm", dpi = 600)
+ggsave("figures/temp_responses_c.png", width = 12, height = 10, units = "cm", dpi = 600)
 
 

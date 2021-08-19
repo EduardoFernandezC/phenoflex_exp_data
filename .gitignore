@@ -40,3 +40,9 @@ vignettes/*.pdf
 
 # Desktop files
 .DS_Store
+
+# Manuscript folder
+/manuscript
+
+# Methods folder
+/method
