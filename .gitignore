@@ -46,3 +46,6 @@ vignettes/*.pdf
 
 # Methods folder
 /method
+
+# RData files
+*.RData
