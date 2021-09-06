@@ -5,7 +5,6 @@ library(patchwork)
 # For reproducibility, this part will set the seed for pseudo random number generator. In theory, I will run this code chunk
 # only in the final version of the analysis. In the meanwhile, results will differ every time. Use system time to avoid
 # anchoring the seed selection
-as.integer(Sys.time()) %% 100000
 set.seed(52243)
 
 # This script will run the PhenoFlex approach using the phenology data collected in our experiment at campus Klein-Altendorf.
@@ -873,9 +872,9 @@ pheno_fit_v1_r10 <- phenologyFitter(par.guess = par_v1_r10,
 
 # Same for version 2 (pheno_fit_v2_r9$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v2_r10 <- c(          32,          325,            0,           21,       3000.0,       9600.0,       5900.0,       5.7e13,            0,           40,            0,            5)
+lower_v2_r10 <- c(          33,          330,            0,           22,       3100.0,       9500.0,       5900.0,       5.6e13,            0,           42,            0,            8)
 par_v2_r10   <- c(3.575275e+01, 3.362357e+02, 9.665035e-02, 2.653338e+01, 3.371009e+03, 9.899714e+03, 6.238888e+03, 5.939968e+13, 1.357235e+00, 4.489110e+01, 3.387779e+00, 1.340575e+01)
-upper_v2_r10 <- c(          39,          345,         0.15,           31,       3600.0,      10200.0,       6400.0,       6.2e13,           10,           46,           10,        22.00)
+upper_v2_r10 <- c(          39,          340,        0.125,           30,       3800.0,      10500.0,       6500.0,       6.3e13,            5,           46,            6,        16.00)
 
 # Run the fitter
 pheno_fit_v2_r10 <- phenologyFitter(par.guess = par_v2_r10,
@@ -886,8 +885,8 @@ pheno_fit_v2_r10 <- phenologyFitter(par.guess = par_v2_r10,
                                    upper = upper_v2_r10,
                                    control = list(smooth = FALSE,
                                                   verbose = FALSE,
-                                                  maxit = 6000,
-                                                  nb.stop.improvement = 300))
+                                                  maxit = 7000,
+                                                  nb.stop.improvement = 400))
 
 # Some intermediate results
 # Generate a data set to collect the outputs of the fitting for the calibration data 
@@ -958,7 +957,7 @@ for (i in 1 : nrow(valid_df_v1)) {
 # The same for the second version
 for (i in 1 : nrow(valid_df_v2)) {
   
-  valid_df_v2[i, "Predicted"] <- PhenoFlex_GDHwrapper(valid_season_list[[i]], pheno_fit_v2_r10$par)
+  valid_df_v2[i, "Predicted"] <- PhenoFlex_GDHwrapper(valid_season_list[[i]], pheno_fit_v2_r9$par)
 }
 
 # Compute the error (observed - predicted)
@@ -981,7 +980,7 @@ ggplot(out_df_v1_r10, aes(pheno, Predicted)) +
   geom_abline(intercept = 0, slope = 1) +
   labs(x = "Observed")
 
-ggplot(out_df_v2_r10, aes(pheno, Predicted)) +
+ggplot(out_df_v2_r9, aes(pheno, Predicted)) +
   geom_point() +
   geom_point(data = valid_df_v2, aes(pheno, Predicted), 
              color = "red") + 
@@ -1003,17 +1002,17 @@ fit_res_boot_v1 <- bootstrap.phenologyFit(pheno_fit_v1_r10,
                                           control = list(smooth = FALSE,
                                                          verbose = TRUE,
                                                          maxit = 1000,
-                                                         nb.stop.improvement = 5))
+                                                         nb.stop.improvement = 10))
 
 # Same as above using version 2
-fit_res_boot_v2 <- bootstrap.phenologyFit(pheno_fit_v2_r10,
+fit_res_boot_v2 <- bootstrap.phenologyFit(pheno_fit_v2_r9,
                                           boot.R = 10,
                                           lower = lower,
                                           upper = upper,
                                           control = list(smooth = FALSE,
                                                          verbose = TRUE,
                                                          maxit = 1000,
-                                                         nb.stop.improvement = 5))
+                                                         nb.stop.improvement = 10))
 
 # Take some quick look at the outputs
 summary(fit_res_boot_v1)
@@ -1066,26 +1065,33 @@ valid_df <- bind_rows("Version 1" = valid_df_v1, "Version 2" = valid_df_v2, .id 
 
 # Create a data set that computes de RSMEP for each facet
 RMSEP_text <- data.frame(pheno = 48,
-                         Predicted = c(153, 148, 143, 153, 148, 143, 143),
-                         Version = c("Version 1", "Version 1", "Version 1", "Version 2",
-                                     "Version 2", "Version 2", "Version 2"),
+                         Predicted = c(153, 148, 143, 138, 133, 153, 148, 143, 138, 133, 133),
+                         Version = c("Version 1", "Version 1", "Version 1", "Version 1", "Version 1",
+                                     "Version 2", "Version 2", "Version 2", "Version 2", "Version 2", "Version 2"),
                          Dataset = c("Calibration", "Validation", "Calibration", "Validation",
+                                     "Calibration", "Validation", "Calibration", "Validation",
                                      "Calibration", "Validation", "Validation"))
 
 # Plot all results including the error for the validation dots
 ggplot() +
   geom_abline(intercept = 0, slope = 1, alpha = 0.35) +
   geom_point(data = out_df, aes(pheno, Predicted, shape = "Calibration"), color = "slategrey") +
+  geom_point(data = filter(out_df, Year %in% pheno_v1$Year[which(!(pheno_v1$Year %in% pheno_v2$Year))]),
+             aes(pheno, Predicted, fill = "Limiting seasons"), shape = 1, color = "firebrick4") +
   geom_pointrange(data = valid_df,
                   aes(pheno, Predicted, ymin = Predicted - SD_boot, ymax = Predicted + SD_boot, color = "Validation"), 
                   size = 0.3, fatten = 0.1) +
   geom_text(data = RMSEP_text,  aes(pheno, Predicted),
-            label = c(bquote("RMSEP"["calib"]*": "*.(round(RMSEP_calib_v1_r10, 1))),
-                      bquote("RMSEP"["valid"]*": "*.(round(RMSEP_valid_v1, 1))),
-                      bquote("AICc"["calib"]*"     : "*.(round(aic_fit_v1_r10, 1))),
-                      bquote("RMSEP"["calib"]*": "*.(round(RMSEP_calib_v2_r10, 1))),
-                      bquote("RMSEP"["valid"]*": "*.(round(RMSEP_valid_v2, 1))),
-                      bquote("AICc"["calib"]*"     : "*.(round(aic_fit_v2_r10, 1))),
+            label = c(bquote("RMSE"["calib"]*" : "*.(round(RMSEP_calib_v1_r10, 1))),
+                      bquote("RMSE"["valid"]*" : "*.(round(RMSEP_valid_v1, 1))),
+                      bquote("RPIQ"["calib"]*"   : "*.(round(RPIQ_calib_v1_r10, 1))),
+                      bquote("RPIQ"["valid"]*"   : "*.(round(RPIQ_valid_v1, 1))),
+                      bquote("AICc"["calib"]*"    : "*.(round(aic_fit_v1_r10, 1))),
+                      bquote("RMSE"["calib"]*" : "*.(round(RMSEP_calib_v2_r10, 1))),
+                      bquote("RMSE"["valid"]*" : "*.(round(RMSEP_valid_v2, 1))),
+                      bquote("RPIQ"["calib"]*"   : "*.(round(RPIQ_calib_v2_r9, 1))),
+                      bquote("RPIQ"["valid"]*"   : "*.(round(RPIQ_valid_v2, 1))),
+                      bquote("AICc"["calib"]*"    : "*.(round(aic_fit_v2_r10, 1))),
                       expression("")),
             hjust = 0, size = 2.5, fontface = "italic") +
   scale_x_continuous(breaks = seq(50, 125, 25),
@@ -1097,7 +1103,8 @@ ggplot() +
   labs(x = "Observed bloom date",
        y = "Predicted bloom date",
        color = NULL,
-       shape = NULL) +
+       shape = NULL,
+       fill = NULL) +
   facet_grid(. ~ Version) +
   theme_bw() +
   theme(strip.background = element_blank(),
@@ -1109,7 +1116,7 @@ ggplot() +
         legend.text = element_text(size = 8))
 
 # Save the final plot to folder
-ggsave("figures/model_performance_d.png", width = 12, height = 10, units = "cm", dpi = 600)
+ggsave("figures/model_performance_final_b.png", width = 12, height = 10, units = "cm", dpi = 600)
 
 
 
@@ -1118,13 +1125,13 @@ ggsave("figures/model_performance_d.png", width = 12, height = 10, units = "cm",
 source("code/00_helper_functions.R")
 
 # Create a data set with theoretical temperatures and heat and chill responses
-temp_response_v1 <- data.frame(Temp = seq(-10, 35, 0.1),
-                               Chill_res = gen_bell(pheno_fit_v1$par, seq(-10, 35, 0.1)),
-                               Heat_res = GDH_response(pheno_fit_v1$par, seq(-10, 35, 0.1)))
+temp_response_v1 <- data.frame(Temp = seq(-3, 48, 0.1),
+                               Chill_res = gen_bell(pheno_fit_v1_r10$par, seq(-3, 48, 0.1)),
+                               Heat_res = GDH_response(pheno_fit_v1_r10$par, seq(-3, 48, 0.1)))
 
-temp_response_v2 <- data.frame(Temp = seq(-5, 40, 0.1),
-                               Chill_res = gen_bell(pheno_fit_v2$par, seq(-5, 40, 0.1)),
-                               Heat_res = GDH_response(pheno_fit_v2$par, seq(-5, 40, 0.1)))
+temp_response_v2 <- data.frame(Temp = seq(-3, 48, 0.1),
+                               Chill_res = gen_bell(pheno_fit_v2_r9$par, seq(-3, 48, 0.1)),
+                               Heat_res = GDH_response(pheno_fit_v2_r9$par, seq(-3, 48, 0.1)))
   
 # Pivot longer to generate a panel plot
 temp_response_v1 <- pivot_longer(temp_response_v1, -Temp, names_to = "Var", values_to = "Response")
@@ -1142,7 +1149,8 @@ temp_response <- bind_rows("version 1" = temp_response_v1,
 chill_response_plot <- ggplot(filter(temp_response, Var == "Chill_res"), aes(Temp, Response)) +
   geom_line(size = 1, color = "blue4") +
   scale_y_continuous(expand = expansion(mult = c(0.02, 0.02))) +
-  scale_x_continuous(labels = function (x) paste0(x, "°C")) +
+  scale_x_continuous(limits = c(-3, 27),
+                     labels = function (x) paste0(x, "°C")) +
   scale_color_manual(values = c("blue", "red")) +
   labs(y = "Arbitrary units") +
   facet_grid(version ~ factor(Var, labels = c("Chill response"))) +
@@ -1170,6 +1178,6 @@ heat_response_plot <- ggplot(filter(temp_response, Var == "Heat_res"), aes(Temp,
   theme(plot.caption = element_text(hjust = 0.5, vjust = 1, size = 11))
 
 # Save the final plot to folder
-ggsave("figures/temp_responses_c.png", width = 12, height = 10, units = "cm", dpi = 600)
+ggsave("figures/temp_responses_final.png", width = 12, height = 10, units = "cm", dpi = 600)
 
 
