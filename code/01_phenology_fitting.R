@@ -1181,3 +1181,37 @@ heat_response_plot <- ggplot(filter(temp_response, Var == "Heat_res"), aes(Temp,
 ggsave("figures/temp_responses_final.png", width = 12, height = 10, units = "cm", dpi = 600)
 
 
+# Compute some metrics for model validation
+# Median error
+med_residuals_v1 <- median(valid_df_v1$Error)
+med_residuals_v2 <- median(valid_df_v2$Error)
+
+# Mean absolute error
+mean_abs_error_v1 <- mean(abs(valid_df_v1$Error))
+mean_abs_error_v2 <- mean(abs(valid_df_v2$Error))
+
+# IQR
+IQR(valid_df_v1$Error)
+IQR(valid_df_v2$Error)
+
+# Create a small data frame for adding the metrics to the text
+metrics_text <- data.frame(Version = c("Version 1", "Version 1", "Version 2", "Version 2", "Version 2"),
+                           y = c(9, 8.5, 9, 8.5, 8))
+
+# Plot the residuals to test for model quality
+ggplot(valid_df, aes(Version, Error)) +
+  geom_hline(yintercept = 0, alpha = 0.45, linetype = 2) +
+  geom_boxplot(fill = "deepskyblue3", width = 0.25, size = 0.2, outlier.size = 0.5) +
+  geom_text(data = metrics_text, aes(Version, y),
+            label = c(bquote("Median error"*"      : "*.(round(med_residuals_v1, 1))),
+                      bquote("Mean abs. error"*" : "*.(round(mean_abs_error_v1, 1))),
+                      bquote("Median error"*"      : "*.(round(med_residuals_v2, 1))),
+                      bquote("Mean abs. error"*" : "*.(round(mean_abs_error_v2, 1))),
+                      expression("")),
+            size = 1.7, hjust = 0, nudge_x = -0.35) +
+  labs(x = NULL,
+       y = "Residuals (days)") +
+  theme_bw(base_size = 8)
+
+ggsave("figures/validation_errors.png", dpi = 600, width = 5, height = 6, units = "cm")  
+
