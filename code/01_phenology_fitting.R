@@ -1075,9 +1075,10 @@ RMSEP_text <- data.frame(pheno = 48,
 # Plot all results including the error for the validation dots
 ggplot() +
   geom_abline(intercept = 0, slope = 1, alpha = 0.35) +
-  geom_point(data = out_df, aes(pheno, Predicted, shape = "Calibration"), color = "slategrey") +
+  geom_point(data = filter(out_df, !(Year %in% pheno_v1$Year[which(!(pheno_v1$Year %in% pheno_v2$Year))])),
+             aes(pheno, Predicted, shape = "Calibration"), color = "slategrey") +
   geom_point(data = filter(out_df, Year %in% pheno_v1$Year[which(!(pheno_v1$Year %in% pheno_v2$Year))]),
-             aes(pheno, Predicted, fill = "Limiting seasons"), shape = 1, color = "firebrick4") +
+             aes(pheno, Predicted, fill = "Marginal seasons"), shape = 2, color = "firebrick") +
   geom_pointrange(data = valid_df,
                   aes(pheno, Predicted, ymin = Predicted - SD_boot, ymax = Predicted + SD_boot, color = "Validation"), 
                   size = 0.3, fatten = 0.1) +
@@ -1109,14 +1110,14 @@ ggplot() +
   theme_bw() +
   theme(strip.background = element_blank(),
         legend.spacing = unit(-0.75, "cm"),
-        legend.position = c(0.85, 0.09),
+        legend.position = c(0.83, 0.09),
         legend.background = element_blank(),
         legend.box.background = element_blank(),
         legend.key = element_rect(fill = NA),
         legend.text = element_text(size = 8))
 
 # Save the final plot to folder
-ggsave("figures/model_performance_final_b.png", width = 12, height = 10, units = "cm", dpi = 600)
+ggsave("figures/model_performance_final_c.png", width = 12, height = 10, units = "cm", dpi = 600)
 
 
 
