@@ -1060,14 +1060,20 @@ valid_df_v2 <- valid_df_v2 %>% pivot_longer(starts_with("Pred_Boot_")) %>% group
   summarise(SD_boot = sd(value))
 
 # Generate a data set that contains all data for easy-faceting
-out_df <- bind_rows("Version 1" = out_df_v1_r10, "Version 2" = out_df_v2_r10, .id = "Version")
-valid_df <- bind_rows("Version 1" = valid_df_v1, "Version 2" = valid_df_v2, .id = "Version")
+out_df <- bind_rows("PhenoFlex[incl.~marginal~seasons]" = out_df_v1_r10,
+                    "PhenoFlex[excl.~marginal~seasons]" = out_df_v2_r10, .id = "Version")
+valid_df <- bind_rows("PhenoFlex[incl.~marginal~seasons]" = valid_df_v1,
+                      "PhenoFlex[excl.~marginal~seasons]" = valid_df_v2, .id = "Version")
 
 # Create a data set that computes de RSMEP for each facet
 RMSEP_text <- data.frame(pheno = 48,
                          Predicted = c(153, 148, 143, 138, 133, 153, 148, 143, 138, 133, 133),
-                         Version = c("Version 1", "Version 1", "Version 1", "Version 1", "Version 1",
-                                     "Version 2", "Version 2", "Version 2", "Version 2", "Version 2", "Version 2"),
+                         Version = c("PhenoFlex[incl.~marginal~seasons]", "PhenoFlex[incl.~marginal~seasons]",
+                                     "PhenoFlex[incl.~marginal~seasons]", "PhenoFlex[incl.~marginal~seasons]",
+                                     "PhenoFlex[incl.~marginal~seasons]",
+                                     "PhenoFlex[excl.~marginal~seasons]", "PhenoFlex[excl.~marginal~seasons]",
+                                     "PhenoFlex[excl.~marginal~seasons]", "PhenoFlex[excl.~marginal~seasons]",
+                                     "PhenoFlex[excl.~marginal~seasons]", "PhenoFlex[excl.~marginal~seasons]"),
                          Dataset = c("Calibration", "Validation", "Calibration", "Validation",
                                      "Calibration", "Validation", "Calibration", "Validation",
                                      "Calibration", "Validation", "Validation"))
@@ -1106,7 +1112,8 @@ ggplot() +
        color = NULL,
        shape = NULL,
        fill = NULL) +
-  facet_grid(. ~ Version) +
+  facet_grid(. ~ factor(Version, levels = c("PhenoFlex[incl.~marginal~seasons]", "PhenoFlex[excl.~marginal~seasons]")),
+             labeller = label_parsed) +
   theme_bw() +
   theme(strip.background = element_blank(),
         legend.spacing = unit(-0.75, "cm"),
@@ -1117,7 +1124,7 @@ ggplot() +
         legend.text = element_text(size = 8))
 
 # Save the final plot to folder
-ggsave("figures/model_performance_final_c.png", width = 12, height = 10, units = "cm", dpi = 600)
+ggsave("figures/model_performance_final_d.png", width = 12, height = 10, units = "cm", dpi = 600)
 
 
 
@@ -1139,8 +1146,8 @@ temp_response_v1 <- pivot_longer(temp_response_v1, -Temp, names_to = "Var", valu
 temp_response_v2 <- pivot_longer(temp_response_v2, -Temp, names_to = "Var", values_to = "Response")
 
 # Generate a single data set
-temp_response <- bind_rows("version 1" = temp_response_v1,
-                           "version 2" = temp_response_v2,
+temp_response <- bind_rows("PhenoFlex[incl.~marginal~seasons]" = temp_response_v1,
+                           "PhenoFlex[excl.~marginal~seasons]" = temp_response_v2,
                            .id = "version")
 
 # Implement the plot. Generate two plots and then merge them to overcome the issue produced by
@@ -1154,7 +1161,9 @@ chill_response_plot <- ggplot(filter(temp_response, Var == "Chill_res"), aes(Tem
                      labels = function (x) paste0(x, "°C")) +
   scale_color_manual(values = c("blue", "red")) +
   labs(y = "Arbitrary units") +
-  facet_grid(version ~ factor(Var, labels = c("Chill response"))) +
+  facet_grid(factor(version, levels = c("PhenoFlex[incl.~marginal~seasons]",
+                                        "PhenoFlex[excl.~marginal~seasons]")) ~
+               factor(Var, labels = c("Chill response"))) +
   theme_bw() +
   theme(axis.title.x = element_blank(),
         axis.text = element_text(size = 8),
@@ -1168,7 +1177,8 @@ heat_response_plot <- ggplot(filter(temp_response, Var == "Heat_res"), aes(Temp,
   scale_x_continuous(labels = function (x) paste0(x, "°C")) +
   scale_color_manual(values = c("blue", "red")) +
   labs(y = "Arbitrary units") +
-  facet_grid(factor(version, labels = c("Version 1", "Version 2")) ~ factor(Var, labels = c("Heat response"))) +
+  facet_grid(factor(version, levels = c("PhenoFlex[incl.~marginal~seasons]", "PhenoFlex[excl.~marginal~seasons]")) ~ 
+               factor(Var, labels = c("Heat~response")), labeller = label_parsed) +
   theme_bw() +
   theme(axis.title = element_blank(),
         axis.text = element_text(size = 8),
@@ -1179,7 +1189,7 @@ heat_response_plot <- ggplot(filter(temp_response, Var == "Heat_res"), aes(Temp,
   theme(plot.caption = element_text(hjust = 0.5, vjust = 1, size = 11))
 
 # Save the final plot to folder
-ggsave("figures/temp_responses_final.png", width = 12, height = 10, units = "cm", dpi = 600)
+ggsave("figures/temp_responses_final_b.png", width = 12, height = 10, units = "cm", dpi = 600)
 
 
 # Compute some metrics for model validation
@@ -1196,13 +1206,17 @@ IQR(valid_df_v1$Error)
 IQR(valid_df_v2$Error)
 
 # Create a small data frame for adding the metrics to the text
-metrics_text <- data.frame(Version = c("Version 1", "Version 1", "Version 2", "Version 2", "Version 2"),
+metrics_text <- data.frame(Version = c("PhenoFlex[incl.~marginal~seasons]", "PhenoFlex[incl.~marginal~seasons]",
+                                       "PhenoFlex[excl.~marginal~seasons]", "PhenoFlex[excl.~marginal~seasons]",
+                                       "PhenoFlex[excl.~marginal~seasons]"),
                            y = c(9, 8.5, 9, 8.5, 8))
 
 # Plot the residuals to test for model quality
-ggplot(valid_df, aes(Version, Error)) +
+ggplot(valid_df, aes(Version, Error, fill = Version)) +
   geom_hline(yintercept = 0, alpha = 0.45, linetype = 2) +
-  geom_boxplot(fill = "deepskyblue3", width = 0.25, size = 0.2, outlier.size = 0.5) +
+  geom_boxplot(width = 0.25, size = 0.2, outlier.size = 0.5) +
+  scale_x_discrete(limits = c("PhenoFlex[incl.~marginal~seasons]",
+                              "PhenoFlex[excl.~marginal~seasons]")) +
   geom_text(data = metrics_text, aes(Version, y),
             label = c(bquote("Median error"*"      : "*.(round(med_residuals_v1, 1))),
                       bquote("Mean abs. error"*" : "*.(round(mean_abs_error_v1, 1))),
@@ -1210,9 +1224,21 @@ ggplot(valid_df, aes(Version, Error)) +
                       bquote("Mean abs. error"*" : "*.(round(mean_abs_error_v2, 1))),
                       expression("")),
             size = 1.7, hjust = 0, nudge_x = -0.35) +
+  scale_fill_manual(values = c("cadetblue", "firebrick"),
+                    breaks = c("PhenoFlex[incl.~marginal~seasons]",
+                               "PhenoFlex[excl.~marginal~seasons]"),
+                    labels = c(bquote("PhenoFlex"["incl. marginal seasons"]),
+                               bquote("PhenoFlex"["excl. marginal seasons"]))) +
   labs(x = NULL,
-       y = "Residuals (days)") +
-  theme_bw(base_size = 8)
+       y = "Residuals (days)",
+       fill = NULL) +
+  theme_bw(base_size = 8) +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.position = c(0.63, 0.075),
+        legend.key.size = unit(0.2, "cm"),
+        legend.background = element_blank(),
+        legend.text = element_text(size = 6))
 
-ggsave("figures/validation_errors.png", dpi = 600, width = 5, height = 6, units = "cm")  
+ggsave("figures/validation_errors_b.png", dpi = 600, width = 5, height = 6, units = "cm")  
 
