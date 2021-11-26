@@ -136,7 +136,7 @@ normal_seasons <- ggplot() +
 histogram <- ggplot(temp_treatments,
                     aes(mean_temp, fill = Treat_season %in% c("9_S2", "13_S1", "29_S2",
                                                               "25_S2", "13_S2"))) +
-  geom_histogram(binwidth = 1) +
+  geom_histogram(binwidth = 1, color = "grey20", size = 0.4) +
   scale_fill_manual(values = c("cadetblue", "firebrick")) +
   coord_flip() +
   scale_y_continuous(breaks = c(0, 4, 8, 12, 16),
