@@ -1187,7 +1187,7 @@ chill_response_plot <- ggplot(filter(temp_response, Var == "Chill_res"), aes(Tem
   geom_line(size = 1, color = "blue4") +
   scale_y_continuous(expand = expansion(mult = c(0.02, 0.02))) +
   scale_x_continuous(limits = c(-5, 25),
-                     labels = function (x) paste0(x, "°C")) +
+                     labels = function (x) paste0(x, " °C")) +
   scale_color_manual(values = c("blue", "red")) +
   labs(y = "Arbitrary units") +
   facet_grid(factor(version, levels = c("PhenoFlex[all]",
@@ -1203,7 +1203,7 @@ chill_response_plot <- ggplot(filter(temp_response, Var == "Chill_res"), aes(Tem
 heat_response_plot <- ggplot(filter(temp_response, Var == "Heat_res"), aes(Temp, Response, color = Var)) +
   geom_line(size = 1, color = "firebrick") +
   scale_y_continuous(expand = expansion(mult = c(0.02, 0.02))) +
-  scale_x_continuous(labels = function (x) paste0(x, "°C")) +
+  scale_x_continuous(labels = function (x) paste0(x, " °C")) +
   scale_color_manual(values = c("blue", "red")) +
   labs(y = "Arbitrary units") +
   facet_grid(factor(version, levels = c("PhenoFlex[all]",
