@@ -1117,7 +1117,7 @@ ggplot() +
   geom_pointrange(data = valid_df,
                   aes(pheno, Predicted, ymin = Predicted - SD_boot, ymax = Predicted + SD_boot, color = "Validation"), 
                   size = 0.3, fatten = 0.1) +
-  geom_text(data = RMSEP_text,  aes(pheno, Predicted),
+  geom_text(data = RMSEP_text,  aes(pheno - 5, Predicted + 7),
             label = c(bquote("RMSE"["calib"]*" : "*.(round(RMSEP_calib_v1_r9, 1))),
                       bquote("RMSE"["valid"]*" : "*.(round(RMSEP_valid_v1, 1))),
                       bquote("RPIQ"["calib"]*"   : "*.(round(RPIQ_calib_v1_r9, 1))),
@@ -1130,10 +1130,12 @@ ggplot() +
                       bquote("AICc"["calib"]*"    : "*.(sprintf("%0.1f", round(aic_fit_v2_r9, 1)))),
                       expression("")),
             hjust = 0, size = 2.5, fontface = "italic") +
-  scale_x_continuous(breaks = seq(50, 125, 25),
-                     labels = function (x) format(dormancyR::JDay_to_date(x, 2021), "%b %d")) +
-  scale_y_continuous(breaks = seq(60, 150, 30),
-                     labels = function (x) format(dormancyR::JDay_to_date(x, 2021), "%b %d")) +
+  scale_x_continuous(breaks = seq(39, 159, 30),
+                     labels = function (x) format(dormancyR::JDay_to_date(x, 2021), "%b %d"),
+                     limits = c(39, 160)) +
+  scale_y_continuous(breaks = seq(39, 159, 30),
+                     labels = function (x) format(dormancyR::JDay_to_date(x, 2021), "%b %d"),
+                     limits = c(39, 160)) +
   scale_shape_manual(values = 1) +
   scale_color_manual(values = "deepskyblue4") +
   labs(x = "Observed bloom date",
@@ -1150,10 +1152,11 @@ ggplot() +
         legend.background = element_blank(),
         legend.box.background = element_blank(),
         legend.key = element_rect(fill = NA),
-        legend.text = element_text(size = 8))
+        legend.text = element_text(size = 8),
+        axis.text.x = element_text(angle = 30, hjust = 0.8, vjust = 1))
 
 # Save the final plot to folder
-ggsave("figures/model_performance_final_d_new_ana.png", width = 12, height = 10, units = "cm", dpi = 600)
+ggsave("figures/model_performance_revised.png", width = 14, height = 12, units = "cm", dpi = 600)
 
 
 

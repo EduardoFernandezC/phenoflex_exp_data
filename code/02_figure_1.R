@@ -145,7 +145,7 @@ histogram <- ggplot(temp_treatments,
   scale_x_continuous(labels = function (x) paste(x, "°C"), 
                      expand = expansion(mult = c(0.005, 0.005))) +
   labs(x = "Mean temperature",
-       y = "Number of\n seasons") +
+       y = "Number of\n experimental seasons") +
   theme_bw() +
   theme(legend.position = "none",
         aspect.ratio = 7,
@@ -162,7 +162,7 @@ ggdraw() +
   theme(plot.background = element_rect(fill = "white", color = NA)) +
   draw_line(x = c(0.1, 0.8), y = 0.828,
             size = 0.5, linetype = "dashed", color = "grey60") +
-  draw_plot_label(c("Marginal seasons", "Non-marginal seasons"),
+  draw_plot_label(c("Marginal experimental seasons", "Non-marginal experimental seasons"),
                   x = 0.8, y = c(0.842, 0.81), hjust = 1, vjust = 0,
                   size = 8, fontface = "italic", color = c("firebrick", "cadetblue")) +
   draw_plot_label("Experimental season", x = 0.812, y = 0.59, size = 9.5, hjust = 0, vjust = 0,
@@ -171,5 +171,30 @@ ggdraw() +
                   size = 10, fontface = "plain")
 
 # Save the plot to the folder
-ggsave("figures/treatments_d.png",
+ggsave("figures/treatments_d_revised.png",
        device = "png", dpi = 600, width = 16.6, height = 22.4, units = "cm")
+
+
+# Computation of chill accumulation on marginal seasons
+marginal_chill <- unnest %>% group_by(Treat_season) %>% nest() %>%
+  mutate(chill = purrr::map(data, ~ max(Dynamic_Model(filter(.x, Date %in% c(as.Date("2018-10-19") : as.Date("2019-01-04")))[["Temp"]])))) %>% 
+  select(-data) %>% unnest(cols = c(chill)) %>% filter(Treat_season %in% c("9_S2", "13_S1", "29_S2",
+                                                                           "25_S2", "13_S2"))
+
+
+normal_chill <- unnest %>% group_by(Treat_season) %>% nest() %>%
+  mutate(chill = purrr::map(data, ~ max(Dynamic_Model(filter(.x, Date %in% c(as.Date("2018-10-19") : as.Date("2019-01-04")))[["Temp"]])))) %>% 
+  select(-data) %>% unnest(cols = c(chill)) %>% filter(!(Treat_season %in% c("9_S2", "13_S1", "29_S2",
+                                                                             "25_S2", "13_S2")))
+
+
+mean(marginal_chill$chill)
+median(marginal_chill$chill)
+sd(marginal_chill$chill)
+hist(marginal_chill$chill)
+
+
+mean(normal_chill$chill)
+median(normal_chill$chill)
+sd(normal_chill$chill)
+hist(normal_chill$chill)

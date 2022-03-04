@@ -46,6 +46,25 @@ load("fitting_09_nov_final.RData")
 # Introduction
 Phenology models are crucial tools for assessing the impacts of climate change on forestry, ecology and agriculture. In the article 'Unusually warm winter seasons may compromise the performance of current phenology models - Predicting bloom dates in young apple trees with `PhenoFlex`', we assessed the performance of the recently proposed `PhenoFlex` phenology modelling framework [@Luedeling2021] in response to different characteristics of the calibration data. In this document, we provide supplementary materials to the main document. Among these, we highlight the specific set of parameters used in each of the ten model runs as well as the results of our supplementary validation of one of the versions of the framework used in the study (i.e. Phenoflex\textsubscript{excluded}).
 
+# Detailed description of the experimental design
+In this study, we used a subset of phenology and weather records reported on in an earlier study by @Fernandez2021. Here, we explain the experimental design and show environmental conditions used in the study. During two consecutive winters, we exposed young apple trees to several environments at different times (Fig. S1).
+
+```{r fig_s1, echo = FALSE, fig.cap = "Conditions used in the experiment during the first year", out.width = "100%", fig.align = 'center'}
+knitr::include_graphics("figures/supplementary_conditions_3.png")
+```
+
+By frequently transferring the trees among environments, we were able to generate 59 experimental seasons and evaluate the phenology of the trees after the exposure to these conditions (Fig. S2).
+
+```{r fig_s2, echo = FALSE, fig.cap = "Experimental seasons used in the study. The first 5 experimental seasons represent the marginal experimental seasons excluded in the respective version of the analysis. In the Environment legend, CKA stands for Campus Klein-Altendorf and ETFE stands for ethylene-tetrafluoroethylenecopolymer", out.height = "90%", fig.align = 'center'}
+knitr::include_graphics("figures/supplementary_conditions.png")
+```
+
+The experimental setup allowed us to generate a substantial temperature variation during the two winter seasons as well as conditions that may have been marginal for apple trees to overcome dormancy as discussed in the main manuscript. Most of the time over the experiment, the mean temperature in those 5 marginal seasons was in the upper part of the temperature range identified among experimental seasons (Fig. S3).
+
+```{r fig_s3, echo = FALSE, fig.cap = "Temperature variation among the experimental seasons used in this study. The solid red line in the plot shows the mean temperature among marginal experimental seasons (1 in the winter of 2018/2019 and 4 in the winter of 2019/2020), whereas the blue solid line represents the mean temperature among all available experimental seasons (i.e. 59)", out.width = "100%", fig.align = 'center'}
+knitr::include_graphics("figures/supplementary_conditions_2.png")
+```
+
 # Parameters used in each model run
 The `phenologyFitter()` function from the `chillR` package [@R-chillR], which is needed to fit the 12 model parameters to data, requires an estimated set of parameters (i.e. `par.guess`) as well as the `lower` and `upper` bounds for these values. We initialized the model fitting procedure with a common set of parameters for both versions of the analysis (i.e. PhenoFlex\textsubscript{all} and PhenoFlex\textsubscript{excluded}).
 
@@ -250,7 +269,9 @@ In this round of the fitting procedure, PhenoFlex\textsubscript{all} reached an 
 
 As mentioned in the main text, we assessed the performance of the PhenoFlex\textsubscript{excluded} version when used to predict bloom dates in the marginal seasons. Following this approach, we aimed to test the viability of extrapolating the modelling framework to conditions outside the calibration data set. The results of this analysis demonstrated the importance of explicitly testing the predictive accuracy of the model under environmental conditions outside the range of the calibration data. When comparable temperature conditions are used for calibration and validation, the model is – despite potentially incorrect assumptions – sufficiently flexible to be well fitted to data and shows good projection quality. However, when validation data contain conditions outside the calibration range, the conceivably inaccurate model structure cannot be compensated by parameter fitting and finds expression in high residual errors (Fig. S1). In this validation, RMSE and RPIQ reached values of 61.2 days and 0.3, respectively. It should be noted, however, that these results are greatly influenced by one outlier showing 127 days of error (observed versus predicted). When removing the outlier from the marginal seasons, the prediction error ranged between 9.3 and 44.4 days (Fig. S1).
 
-![Validation of the PhenoFlex\textsubscript{excluded} version using the five marginal seasons excluded from the calibration data set. Whereas the open blue circles represent the experimental seasons used for calibration, the filled red circles represent the five marginal seasons used for validating the framework. The vertical lines in the marginal season dots represent the uncertainty estimated by bootstrapping.](figures/final_figures/Figure_S1.png)
+```{r fig_s4, echo = FALSE, fig.cap = "Validation of the PhenoFlex\textsubscript{excluded} version using the five marginal seasons excluded from the calibration data set. Whereas the open blue circles represent the experimental seasons used for calibration, the filled red circles represent the five marginal seasons used for validating the framework. The vertical lines in the marginal season dots represent the uncertainty estimated by bootstrapping.", out.width = "100%", fig.align = 'center'}
+knitr::include_graphics("figures/final_figures/Figure_S1.png")
+```
 
 # References
 
