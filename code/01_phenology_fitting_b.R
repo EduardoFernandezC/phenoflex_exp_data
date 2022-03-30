@@ -1275,3 +1275,12 @@ ggplot(valid_df, aes(Version, Error, fill = Version)) +
 
 ggsave("figures/validation_errors_b_new_ana.png", dpi = 600, width = 5, height = 6, units = "cm")  
 
+# Estimate the RMSE for the "null model". This will be implemented by computing the average bloom in the calibration data sets plus
+# the estimation of difference between this average and the dates in the validation data sets
+
+average_bloom_v1 <- mean(pheno_fit_v1_r10$bloomJDays)
+average_bloom_v2 <- mean(pheno_fit_v2_r10$bloomJDays)
+
+RMSE_null_v1 <- chillR::RMSEP(average_bloom_v1, valid_df_v1$pheno)  
+RMSE_null_v2 <- chillR::RMSEP(average_bloom_v2, valid_df_v2$pheno)  
+
