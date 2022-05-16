@@ -34,8 +34,9 @@ colnames(data)[which(colnames(data) == "Year_2")] <- "Year"
 pheno <- read.csv("data/final_bio_data_S1_S2_apple.csv")
 
 # Generate two data sets according to the version of the analysis. I will also exclude repeated treatments 22, 23, 25, and 26
-pheno_v1 <- pheno[!(pheno$Treatment %in% c(36, 3, 23, 24, 17, 18)), ]
-pheno_v2 <- pheno[!(pheno$Treatment %in% c(36, 3, 61, 13, 46, 62, 42, 58, 23, 24, 17, 18)), ]
+pheno_v1 <- pheno[!(pheno$Treatment %in% c(36, 3, 23, 24, 17, 18, 61)), ]
+pheno_v2 <- pheno[!(pheno$Treatment %in% c(36, 3, 23, 24, 17, 18, 61, # Excluding these treatments from both datasets
+                                           13, 42, 46, 58, 62)), ] # These treatments are the marginal seasons (n = 5)
 
 # Add the year column to match the data in the weather data frame
 pheno_v1["Treatment"] <- pheno_v1$Treatment + 2019
@@ -50,9 +51,10 @@ colnames(pheno_v1) <- c("Year", "pheno")
 colnames(pheno_v2) <- c("Year", "pheno")
 
 
-# Define a vector of calibration and validation seasons (20% of the seasons)
-calibration_seasons <- sort(sample(pheno_v2$Year, round(nrow(pheno_v2) * 0.75), replace = FALSE))
-calibration_seasons_v1 <- sort(c(calibration_seasons, pheno_v1$Year[which(!(pheno_v1$Year %in% pheno_v2$Year))]))
+# Define a vector of calibration and validation seasons. V1 includes the marginal seasons
+calibration_seasons <- sort(sample(pheno_v2$Year, 40, replace = FALSE))
+calibration_seasons_v1 <- sort(c(sample(calibration_seasons, 35, replace = FALSE),
+                                 pheno_v1$Year[which(!(pheno_v1$Year %in% pheno_v2$Year))]))
 calibration_seasons_v2 <- calibration_seasons
 
 # Common validation seasons
@@ -127,10 +129,10 @@ mean(abs(out_df_v2_r1$Error))
 # Compute the AICc
 aic_fit_v1_r1 <- (2 * length(par)) + (length(calibration_seasons_v1) * 
                                         log(pheno_fit_v1_r1$model_fit$value / length(calibration_seasons_v1))) + ((2 * length(par)^2 + 2 * length(par)) /
-                                                                                                              length(calibration_seasons_v1) - length(par) - 1)
+                                                                                                                    length(calibration_seasons_v1) - length(par) - 1)
 aic_fit_v2_r1 <- (2 * length(par)) + (length(calibration_seasons_v2) * 
-                                     log(pheno_fit_v2_r1$model_fit$value / length(calibration_seasons_v2))) + ((2 * length(par)^2 + 2 * length(par)) /
-                                                                                                              length(calibration_seasons_v2) - length(par) - 1)
+                                        log(pheno_fit_v2_r1$model_fit$value / length(calibration_seasons_v2))) + ((2 * length(par)^2 + 2 * length(par)) /
+                                                                                                                    length(calibration_seasons_v2) - length(par) - 1)
 
 # Plot the observed versus predicted values
 ggplot(out_df_v1_r1, aes(pheno, Predicted)) +
@@ -149,9 +151,9 @@ ggplot(out_df_v2_r1, aes(pheno, Predicted)) +
 # Set the parameters using the results from the previous run
 # Version 1 (pheno_fit_v1_r1$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v1_r2 <- c(          50,          300,            0,           20,       3000.0,       9000.0,       6000.0,        5.e13,            0,           26,            0,         0.05)
-par_v1_r2   <- c(7.973532e+01, 3.515716e+02, 1.456674e-01, 2.550465e+01, 3.268874e+03, 9.897931e+03, 6.067611e+03, 5.939862e+13, 5.361414e+00, 3.067708e+01, 5.759079e+00, 8.604118e-01)
-upper_v1_r2 <- c(          85,          400,          0.5,           30,       4000.0,      10000.0,       7000.0,        6.e13,           10,           36,           10,        30.00)
+lower_v1_r2 <- c(          45,          290,            0,           18,       3000.0,       9000.0,       6000.0,       5.2e13,            0,           29,            0,         0.05)
+par_v1_r2   <- c(5.898501e+01, 3.260215e+02, 1.606328e-01, 2.251842e+01, 3.309868e+03, 9.900106e+03, 6.295673e+03, 5.939926e+13, 6.143360e+00, 3.986939e+01, 8.630051e+00, 1.459628e+01)
+upper_v1_r2 <- c(          65,          380,          0.5,           30,       4000.0,      10000.0,       7000.0,       6.2e13,           10,           44,           12,        30.00)
 
 # Run the fitter
 pheno_fit_v1_r2 <- phenologyFitter(par.guess = par_v1_r2,
@@ -167,9 +169,9 @@ pheno_fit_v1_r2 <- phenologyFitter(par.guess = par_v1_r2,
 
 # Same for version 2 (pheno_fit_v2_r1$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v2_r2 <- c(          20,          300,            0,           18,       3000.0,       9000.0,       6000.0,        5.e13,            0,           30,            0,           10)
+lower_v2_r2 <- c(          25,          340,            0,           17,       3000.0,       9000.0,       6000.0,       5.2e13,            0,           30,            0,         1.00)
 par_v2_r2   <- c(3.492167e+01, 3.872746e+02, 2.715607e-01, 2.176161e+01, 3.371032e+03, 9.900773e+03, 6.283549e+03, 5.939925e+13, 5.119899e+00, 3.999171e+01, 6.298089e+00, 3.999151e+01)
-upper_v2_r2 <- c(          40,          400,          0.5,           30,       4000.0,      10000.0,       7000.0,        6.e13,           10,           45,           10,        55.00)
+upper_v2_r2 <- c(          40,          420,          0.5,           32,       4000.0,      10000.0,       7000.0,       6.2e13,           10,           42,           10,        50.00)
 
 # Run the fitter
 pheno_fit_v2_r2 <- phenologyFitter(par.guess = par_v2_r2,
@@ -214,11 +216,11 @@ mean(abs(out_df_v2_r2$Error))
 
 # Compute the AICc
 aic_fit_v1_r2 <- (2 * length(par_v1_r2)) + (length(calibration_seasons_v1) * 
-                                        log(pheno_fit_v1_r2$model_fit$value / length(calibration_seasons_v1))) + ((2 * length(par_v1_r2)^2 + 2 * length(par_v1_r2)) /
-                                                                                                                    length(calibration_seasons_v1) - length(par_v1_r2) - 1)
+                                              log(pheno_fit_v1_r2$model_fit$value / length(calibration_seasons_v1))) + ((2 * length(par_v1_r2)^2 + 2 * length(par_v1_r2)) /
+                                                                                                                          length(calibration_seasons_v1) - length(par_v1_r2) - 1)
 aic_fit_v2_r2 <- (2 * length(par_v2_r2)) + (length(calibration_seasons_v2) * 
-                                        log(pheno_fit_v2_r2$model_fit$value / length(calibration_seasons_v2))) + ((2 * length(par_v2_r2)^2 + 2 * length(par_v2_r2)) /
-                                                                                                                    length(calibration_seasons_v2) - length(par_v2_r2) - 1)
+                                              log(pheno_fit_v2_r2$model_fit$value / length(calibration_seasons_v2))) + ((2 * length(par_v2_r2)^2 + 2 * length(par_v2_r2)) /
+                                                                                                                          length(calibration_seasons_v2) - length(par_v2_r2) - 1)
 
 # Plot the observed versus predicted values
 ggplot(out_df_v1_r2, aes(pheno, Predicted)) +
@@ -237,9 +239,9 @@ ggplot(out_df_v2_r2, aes(pheno, Predicted)) +
 # Set the parameters using the results from the previous run
 # Version 1 (pheno_fit_v1_r2$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v1_r3 <- c(          60,          320,            0,           20,       3000.0,       9000.0,       6000.0,        5.e13,            0,           25,            0,         0.05)
-par_v1_r3   <- c(8.169113e+01, 3.402895e+02, 1.715215e-01, 2.572267e+01, 3.269949e+03, 9.897904e+03, 6.078208e+03, 5.939879e+13, 5.371916e+00, 2.928168e+01, 5.759231e+00, 1.290212e+00)
-upper_v1_r3 <- c(          90,          370,          0.25,          30,       4000.0,      10000.0,       7000.0,        6.e13,           10,           35,           10,        30.00)
+lower_v1_r3 <- c(          48,          290,            0,           15,       3000.0,       9000.0,       6000.0,       5.2e13,            0,           24,            0,         0.05)
+par_v1_r3   <- c(5.837468e+01, 3.322524e+02, 3.899379e-01, 2.204617e+01, 3.310447e+03, 9.900260e+03, 6.344819e+03, 5.939986e+13, 7.235736e+00, 3.467449e+01, 8.883098e+00, 1.817915e+01)
+upper_v1_r3 <- c(          68,          370,         0.65,           32,       4000.0,      10500.0,       7000.0,       6.2e13,           11,           44,           11,        35.00)
 
 # Run the fitter
 pheno_fit_v1_r3 <- phenologyFitter(par.guess = par_v1_r3,
@@ -255,9 +257,9 @@ pheno_fit_v1_r3 <- phenologyFitter(par.guess = par_v1_r3,
 
 # Same for version 2 (pheno_fit_v2_r2$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v2_r3 <- c(          28,          330,            0,           20,       3000.0,       9000.0,       6000.0,        5.e13,            0,           30,            0,            5)
-par_v2_r3   <- c(3.577411e+01, 3.528342e+02, 1.514894e-01, 2.207405e+01, 3.371040e+03, 9.900867e+03, 6.283443e+03, 5.939932e+13, 2.278396e+00, 4.498529e+01, 6.481487e+00, 4.256795e+01)
-upper_v2_r3 <- c(          42,          380,         0.25,           30,       4000.0,      10000.0,       7000.0,        6.e13,           10,           45,           10,        45.00)
+lower_v2_r3 <- c(          20,          350,            0,           18,       3000.0,       9000.0,       6000.0,       5.2e13,            0,           30,            0,         1.00)
+par_v2_r3   <- c(3.379713e+01, 4.062356e+02, 2.361878e-01, 2.137393e+01, 3.371039e+03, 9.901300e+03, 6.214008e+03, 5.939925e+13, 1.454457e+00, 4.196362e+01, 6.094298e+00, 1.070739e+01)
+upper_v2_r3 <- c(          50,          450,         0.55,           35,       4000.0,      10500.0,       7000.0,       6.2e13,           10,           46,           10,        35.00)
 
 # Run the fitter
 pheno_fit_v2_r3 <- phenologyFitter(par.guess = par_v2_r3,
@@ -268,8 +270,8 @@ pheno_fit_v2_r3 <- phenologyFitter(par.guess = par_v2_r3,
                                    upper = upper_v2_r3,
                                    control = list(smooth = FALSE,
                                                   verbose = FALSE,
-                                                  maxit = 1000,
-                                                  nb.stop.improvement = 5))
+                                                  maxit = 1500,
+                                                  nb.stop.improvement = 10))
 
 # Some intermediate results
 # Generate a data set to collect the outputs of the fitting for the calibration data 
@@ -325,9 +327,9 @@ ggplot(out_df_v2_r3, aes(pheno, Predicted)) +
 # Set the parameters using the results from the previous run
 # Version 1 (pheno_fit_v1_r3$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v1_r4 <- c(          60,          340,            0,           22,       3000.0,       9000.0,       5500.0,        5.e13,            0,           24,            0,            1)
-par_v1_r4   <- c(8.127247e+01, 3.621326e+02, 2.027210e-01, 2.786980e+01, 3.269950e+03, 9.897904e+03, 6.078365e+03, 5.939873e+13, 5.371916e+00, 2.795902e+01, 4.313384e+00, 1.290212e+00)
-upper_v1_r4 <- c(          95,          380,          0.3,           32,       4000.0,      10500.0,       7000.0,       6.2e13,           10,           36,           10,        20.00)
+lower_v1_r4 <- c(          45,          290,            0,           15,       3000.0,       9000.0,       5500.0,       5.2e13,            0,           20,            0,            1)
+par_v1_r4   <- c(5.982188e+01, 3.391820e+02, 5.362487e-01, 2.298870e+01, 3.310334e+03, 9.901517e+03, 6.346304e+03, 5.939996e+13, 7.197365e+00, 3.069973e+01, 7.613608e+00, 7.334750e+00)
+upper_v1_r4 <- c(          70,          370,         0.75,           32,       4000.0,      10300.0,       7000.0,       6.2e13,           12,           40,           12,        20.00)
 
 # Run the fitter
 pheno_fit_v1_r4 <- phenologyFitter(par.guess = par_v1_r4,
@@ -343,9 +345,9 @@ pheno_fit_v1_r4 <- phenologyFitter(par.guess = par_v1_r4,
 
 # Same for version 2 (pheno_fit_v2_r3$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v2_r4 <- c(          25,          350,            0,           20,       3000.0,       9000.0,       5500.0,       5.0e13,            0,           35,            0,            5)
-par_v2_r4   <- c(3.493029e+01, 3.748525e+02, 1.407212e-01, 2.330585e+01, 3.371041e+03, 9.899681e+03, 6.240408e+03, 5.939942e+13, 1.375911e+00, 4.498077e+01, 4.881018e+00, 3.311156e+01)
-upper_v2_r4 <- c(          45,          390,         0.25,           30,       4000.0,      11000.0,       7000.0,       6.5e13,           10,           46,           10,        40.00)
+lower_v2_r4 <- c(          28,          360,            0,           17,       3000.0,       9300.0,       5800.0,       5.3e13,            0,           35,            0,           10)
+par_v2_r4   <- c(3.412481e+01, 3.962168e+02, 1.958515e-01, 2.161528e+01, 3.371039e+03, 9.901299e+03, 6.214040e+03, 5.939950e+13, 1.454457e+00, 4.599390e+01, 5.920062e+00, 1.112166e+01)
+upper_v2_r4 <- c(          44,          440,         0.45,           30,       4000.0,      10500.0,       6800.0,       6.5e13,           10,           48,           12,        40.00)
 
 # Run the fitter
 pheno_fit_v2_r4 <- phenologyFitter(par.guess = par_v2_r4,
@@ -413,9 +415,9 @@ ggplot(out_df_v2_r4, aes(pheno, Predicted)) +
 # Set the parameters using the results from the previous run
 # Version 1 (pheno_fit_v1_r4$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v1_r5 <- c(          70,          350,            0,           20,       3000.0,       9000.0,       5500.0,       5.5e13,            0,           20,            0,            1)
-par_v1_r5   <- c(8.126363e+01, 3.744358e+02, 2.414810e-01, 2.788736e+01, 3.269947e+03, 9.897909e+03, 6.078255e+03, 5.939866e+13, 5.371916e+00, 2.806959e+01, 4.040326e+00, 1.290576e+00)
-upper_v1_r5 <- c(          90,          390,         0.35,           35,       4000.0,      11000.0,       7000.0,       6.5e13,           10,           36,           10,        20.00)
+lower_v1_r5 <- c(          50,          330,            0,           18,       3000.0,       9600.0,       6000.0,       5.5e13,            2,           30,            2,          0.5)
+par_v1_r5   <- c(6.002517e+01, 3.538325e+02, 4.668646e-01, 2.279862e+01, 3.310305e+03, 9.901535e+03, 6.344317e+03, 5.939992e+13, 7.145970e+00, 3.601947e+01, 7.611601e+00, 7.627144e+00)
+upper_v1_r5 <- c(          75,          370,         0.55,           28,       4000.0,      10300.0,       7000.0,       6.5e13,           10,           42,           12,        15.00)
 
 # Run the fitter
 pheno_fit_v1_r5 <- phenologyFitter(par.guess = par_v1_r5,
@@ -431,9 +433,9 @@ pheno_fit_v1_r5 <- phenologyFitter(par.guess = par_v1_r5,
 
 # Same for version 2 (pheno_fit_v2_r4$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v2_r5 <- c(          27,          340,            0,           20,       3000.0,       9000.0,       5500.0,       5.5e13,            0,           35,            0,            5)
-par_v2_r5   <- c(3.559138e+01, 3.556880e+02, 1.306868e-01, 2.340172e+01, 3.371042e+03, 9.899680e+03, 6.240416e+03, 5.939915e+13, 1.342226e+00, 4.566080e+01, 4.881018e+00, 1.184611e+01)
-upper_v2_r5 <- c(          43,          370,         0.25,           30,       4000.0,      10500.0,       6500.0,       6.2e13,           10,           47,           10,        20.00)
+lower_v2_r5 <- c(          27,          360,            0,           18,       3000.0,       9500.0,       5800.0,       5.5e13,            0,           35,            1,         1.00)
+par_v2_r5   <- c(3.398745e+01, 3.832050e+02, 2.058296e-01, 2.245362e+01, 3.371035e+03, 9.901300e+03, 6.213937e+03, 5.939939e+13, 1.454543e+00, 4.555801e+01, 5.917282e+00, 1.081221e+01)
+upper_v2_r5 <- c(          37,          400,         0.55,           32,       4000.0,      10300.0,       6800.0,       6.3e13,            8,           48,           10,        25.00)
 
 # Run the fitter
 pheno_fit_v2_r5 <- phenologyFitter(par.guess = par_v2_r5,
@@ -501,9 +503,9 @@ ggplot(out_df_v2_r5, aes(pheno, Predicted)) +
 # Set the parameters using the results from the previous run
 # Version 1 (pheno_fit_v1_r5$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v1_r6 <- c(          75,          360,            0,           22,       3000.0,       9000.0,       5500.0,       5.5e13,            0,           23,            0,            1)
-par_v1_r6   <- c(8.172607e+01, 3.808086e+02, 2.119380e-01, 2.772426e+01, 3.269964e+03, 9.897902e+03, 6.076986e+03, 5.939900e+13, 5.370861e+00, 2.773408e+01, 3.727458e+00, 1.295076e+00)
-upper_v1_r6 <- c(          88,          390,        0.325,           32,       4000.0,      10500.0,       6500.0,       6.5e13,           10,           33,           10,        15.00)
+lower_v1_r6 <- c(          40,          290,            0,           18,       2900.0,       9000.0,       5700.0,       5.3e13,            0,           20,            0,         0.01)
+par_v1_r6   <- c(6.003778e+01, 3.430605e+02, 3.238688e-01, 2.507193e+01, 3.310284e+03, 9.901609e+03, 6.342868e+03, 5.940006e+13, 5.636596e+00, 3.360488e+01, 6.974146e+00, 2.238448e+00)
+upper_v1_r6 <- c(          80,          390,         0.55,           32,       3900.0,      10500.0,       6900.0,       6.8e13,           12,           48,           12,        20.00)
 
 
 # Run the fitter
@@ -516,13 +518,13 @@ pheno_fit_v1_r6 <- phenologyFitter(par.guess = par_v1_r6,
                                    control = list(smooth = FALSE,
                                                   verbose = FALSE,
                                                   maxit = 2000,
-                                                  nb.stop.improvement = 20))
+                                                  nb.stop.improvement = 100))
 
 # Same for version 2 (pheno_fit_v2_r5$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v2_r6 <- c(          27,          325,            0,           20,       3000.0,       9500.0,       5500.0,       5.5e13,            0,           35,            0,            5)
-par_v2_r6   <- c(3.715861e+01, 3.410498e+02, 8.301206e-02, 2.543932e+01, 3.371036e+03, 9.899691e+03, 6.240187e+03, 5.939902e+13, 1.322409e+00, 4.666922e+01, 3.368638e+00, 1.742363e+01)
-upper_v2_r6 <- c(          47,          365,         0.15,           30,       4000.0,      10500.0,       6800.0,       6.2e13,           10,           47,           10,        25.00)
+lower_v2_r6 <- c(          25,          330,            0,           18,       3000.0,       9200.0,       5700.0,       5.4e13,         0.05,           40,            0,          0.5)
+par_v2_r6   <- c(3.467235e+01, 3.613910e+02, 1.481830e-01, 2.242230e+01, 3.371040e+03, 9.901317e+03, 6.213769e+03, 5.939943e+13, 1.453357e+00, 4.798370e+01, 5.917437e+00, 1.100240e+01)
+upper_v2_r6 <- c(          40,          390,         0.35,           30,       4000.0,      10800.0,       6900.0,       6.6e13,           10,           50,           10,        20.00)
 
 # Run the fitter
 pheno_fit_v2_r6 <- phenologyFitter(par.guess = par_v2_r6,
@@ -533,8 +535,8 @@ pheno_fit_v2_r6 <- phenologyFitter(par.guess = par_v2_r6,
                                    upper = upper_v2_r6,
                                    control = list(smooth = FALSE,
                                                   verbose = FALSE,
-                                                  maxit = 3000,
-                                                  nb.stop.improvement = 50))
+                                                  maxit = 2000,
+                                                  nb.stop.improvement = 100))
 
 # Some intermediate results
 # Generate a data set to collect the outputs of the fitting for the calibration data 
@@ -590,9 +592,9 @@ ggplot(out_df_v2_r6, aes(pheno, Predicted)) +
 # Set the parameters using the results from the previous run
 # Version 1 (pheno_fit_v1_r6$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v1_r7 <- c(          80,          375,            0,           24,       3000.0,       9000.0,       5500.0,       5.5e13,            0,           23,            0,            0)
-par_v1_r7   <- c(8.406747e+01, 3.868252e+02, 2.802052e-01, 2.803642e+01, 3.269967e+03, 9.897790e+03, 6.123488e+03, 5.939797e+13, 5.543387e+00, 2.821836e+01, 3.435302e+00, 1.697243e+00)
-upper_v1_r7 <- c(          88,          395,        0.325,           34,       4000.0,      10500.0,       6600.0,       6.5e13,           10,           33,           10,        10.00)
+lower_v1_r7 <- c(          55,          325,            0,           20,       3000.0,       9000.0,       5500.0,       5.5e13,            0,           30,            2,            0)
+par_v1_r7   <- c(6.075154e+01, 3.341590e+02, 5.318899e-01, 2.495407e+01, 3.310303e+03, 9.901636e+03, 6.342682e+03, 5.940032e+13, 6.418330e+00, 3.388484e+01, 6.956173e+00, 1.573674e+00)
+upper_v1_r7 <- c(          65,          345,         0.65,           30,       4000.0,      10500.0,       6600.0,       6.5e13,           10,           40,           10,        10.00)
 
 # Run the fitter
 pheno_fit_v1_r7 <- phenologyFitter(par.guess = par_v1_r7,
@@ -608,9 +610,9 @@ pheno_fit_v1_r7 <- phenologyFitter(par.guess = par_v1_r7,
 
 # Same for version 2 (pheno_fit_v2_r6$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v2_r7 <- c(          34,          335,            0,           20,       3000.0,       9400.0,       5800.0,       5.5e13,            0,           35,            0,            5)
-par_v2_r7   <- c(3.715861e+01, 3.410498e+02, 8.301206e-02, 2.543932e+01, 3.371036e+03, 9.899691e+03, 6.240187e+03, 5.939902e+13, 1.322409e+00, 4.666922e+01, 3.368638e+00, 1.742363e+01)
-upper_v2_r7 <- c(          40,          355,        0.125,           30,       4000.0,      10500.0,       6800.0,       6.4e13,           10,           48,           10,        25.00)
+lower_v2_r7 <- c(          30,          365,            0,           20,       3000.0,       9500.0,       5800.0,       5.5e13,            0,           35,            0,          1.0)
+par_v2_r7   <- c(3.416959e+01, 3.796795e+02, 1.588349e-01, 2.637063e+01, 3.371036e+03, 9.901315e+03, 6.214195e+03, 5.939915e+13, 1.268310e+00, 4.119790e+01, 3.340906e+00, 1.120830e+01)
+upper_v2_r7 <- c(          40,          385,        0.225,           30,       4000.0,      10500.0,       6800.0,       6.4e13,            6,           45,            8,        20.00)
 
 # Run the fitter
 pheno_fit_v2_r7 <- phenologyFitter(par.guess = par_v2_r7,
@@ -673,14 +675,13 @@ ggplot(out_df_v2_r7, aes(pheno, Predicted)) +
   labs(x = "Observed")
 
 
-
 # Model run number 8 ####
 # Set the parameters using the results from the previous run
 # Version 1 (pheno_fit_v1_r7$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v1_r8 <- c(          70,          380,            0,           24,       3000.0,       9300.0,       5600.0,       5.7e13,            0,           24,            0,            0)
-par_v1_r8   <- c(8.069311e+01, 3.947530e+02, 3.011341e-01, 2.870726e+01, 3.270072e+03, 9.897215e+03, 6.066225e+03, 5.939720e+13, 5.830716e+00, 2.871877e+01, 3.013004e+00, 1.513857e+00)
-upper_v1_r8 <- c(          90,          410,        0.375,           34,       4000.0,      10500.0,       6400.0,       6.2e13,           10,           32,           10,         8.00)
+lower_v1_r8 <- c(          55,          315,          0.3,           22,       2800.0,       9500.0,       5900.0,       5.6e13,            2,           26,            2,            0)
+par_v1_r8   <- c(6.241611e+01, 3.363827e+02, 5.244054e-01, 2.711304e+01, 3.310309e+03, 9.901660e+03, 6.395421e+03, 5.940064e+13, 6.474790e+00, 3.023036e+01, 5.553607e+00, 1.386503e+00)
+upper_v1_r8 <- c(          70,          355,          0.7,           32,       3800.0,      10200.0,       6700.0,       6.4e13,            9,           36,            8,        15.00)
 
 # Run the fitter
 pheno_fit_v1_r8 <- phenologyFitter(par.guess = par_v1_r8,
@@ -696,9 +697,9 @@ pheno_fit_v1_r8 <- phenologyFitter(par.guess = par_v1_r8,
 
 # Same for version 2 (pheno_fit_v2_r7$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v2_r8 <- c(          34,          335,            0,           22,       3000.0,       9500.0,       5800.0,       5.6e13,            0,           40,            0,            5)
-par_v2_r8   <- c(3.703158e+01, 3.422739e+02, 8.370522e-02, 2.543982e+01, 3.371008e+03, 9.899714e+03, 6.239101e+03, 5.939914e+13, 1.323499e+00, 4.771689e+01, 3.387846e+00, 1.767365e+01)
-upper_v2_r8 <- c(          40,          355,        0.125,           28,       4000.0,      10400.0,       6800.0,       6.3e13,           10,           48,           10,        25.00)
+lower_v2_r8 <- c(          28,          345,         0.01,           20,       2800.0,       9600.0,       5800.0,       5.6e13,            0,           38,            0,            7)
+par_v2_r8   <- c(3.471534e+01, 3.747534e+02, 1.284166e-01, 2.636967e+01, 3.371029e+03, 9.901260e+03, 6.214426e+03, 5.939895e+13, 1.330276e+00, 4.472405e+01, 2.962285e+00, 1.795351e+01)
+upper_v2_r8 <- c(          40,          405,          0.3,           32,       3700.0,      10300.0,       6800.0,       6.3e13,            8,           52,            8,        30.00)
 
 # Run the fitter
 pheno_fit_v2_r8 <- phenologyFitter(par.guess = par_v2_r8,
@@ -709,8 +710,8 @@ pheno_fit_v2_r8 <- phenologyFitter(par.guess = par_v2_r8,
                                    upper = upper_v2_r8,
                                    control = list(smooth = FALSE,
                                                   verbose = FALSE,
-                                                  maxit = 3000,
-                                                  nb.stop.improvement = 50))
+                                                  maxit = 4000,
+                                                  nb.stop.improvement = 150))
 
 # Some intermediate results
 # Generate a data set to collect the outputs of the fitting for the calibration data 
@@ -761,14 +762,13 @@ ggplot(out_df_v2_r8, aes(pheno, Predicted)) +
   labs(x = "Observed")
 
 
-
 # Model run number 9 ####
 # Set the parameters using the results from the previous run
 # Version 1 (pheno_fit_v1_r8$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v1_r9 <- c(          70,          380,            0,           22,       2800.0,       9400.0,       5500.0,       5.6e13,            0,           23,            0,            0)
-par_v1_r9   <- c(8.110983e+01, 4.091862e+02, 3.495934e-01, 2.808232e+01, 3.270080e+03, 9.897752e+03, 6.067306e+03, 5.939717e+13, 5.457257e+00, 2.811405e+01, 3.068110e+00, 1.356180e+00)
-upper_v1_r9 <- c(          90,          430,          0.4,           36,       4200.0,      10600.0,       6500.0,       6.3e13,           10,           36,           10,        10.00)
+lower_v1_r9 <- c(          55,          300,          0.5,           20,       3000.0,       9500.0,       5500.0,       5.0e13,            1,           20,            2,            0)
+par_v1_r9   <- c(6.308038e+01, 3.150055e+02, 6.960001e-01, 2.789891e+01, 3.310344e+03, 9.901652e+03, 6.396146e+03, 5.940060e+13, 6.469237e+00, 2.789990e+01, 5.700527e+00, 1.392844e+00)
+upper_v1_r9 <- c(          75,          325,         0.85,           35,       4000.0,      10500.0,       6900.0,       7.0e13,           11,           37,           10,        25.00)
 
 # Run the fitter
 pheno_fit_v1_r9 <- phenologyFitter(par.guess = par_v1_r9,
@@ -779,14 +779,14 @@ pheno_fit_v1_r9 <- phenologyFitter(par.guess = par_v1_r9,
                                    upper = upper_v1_r9,
                                    control = list(smooth = FALSE,
                                                   verbose = FALSE,
-                                                  maxit = 4000,
-                                                  nb.stop.improvement = 200))
+                                                  maxit = 5000,
+                                                  nb.stop.improvement = 300))
 
 # Same for version 2 (pheno_fit_v2_r8$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v2_r9 <- c(          33,          335,            0,           22,       3100.0,       9500.0,       5900.0,       5.6e13,            0,           40,            0,            5)
-par_v2_r9   <- c(3.600597e+01, 3.433006e+02, 9.626594e-02, 2.617425e+01, 3.371018e+03, 9.899718e+03, 6.239022e+03, 5.939945e+13, 1.373597e+00, 4.696788e+01, 3.387809e+00, 1.553505e+01)
-upper_v2_r9 <- c(          39,          355,        0.125,           30,       3800.0,      10500.0,       6500.0,       6.3e13,           10,           48,           10,        22.00)
+lower_v2_r9 <- c(          23,          325,            0,           16,       3000.0,       9500.0,       5700.0,       5.6e13,            0,           40,            0,            1)
+par_v2_r9   <- c(3.398599e+01, 3.567737e+02, 1.355020e-01, 2.684285e+01, 3.371005e+03, 9.901244e+03, 6.214071e+03, 5.939792e+13, 1.373655e+00, 5.133324e+01, 3.632503e+00, 8.446999e+00)
+upper_v2_r9 <- c(          43,          375,          0.5,           36,       3800.0,      10500.0,       6700.0,       6.3e13,           10,           55,           10,        20.00)
 
 # Run the fitter
 pheno_fit_v2_r9 <- phenologyFitter(par.guess = par_v2_r9,
@@ -854,39 +854,39 @@ ggplot(out_df_v2_r9, aes(pheno, Predicted)) +
 # Set the parameters using the results from the previous run
 # Version 1 (pheno_fit_v1_r9$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v1_r10 <- c(          78,          415,          0.2,           25,       3000.0,       9600.0,       5800.0,       5.7e13,            0,           25,            0,            0)
-par_v1_r10   <- c(8.082702e+01, 4.291137e+02, 3.759529e-01, 2.818768e+01, 3.270077e+03, 9.897764e+03, 6.067065e+03, 5.939721e+13, 5.456977e+00, 2.832324e+01, 2.578843e+00, 1.355878e+00)
-upper_v1_r10 <- c(          82,          435,          0.4,           31,       3500.0,      10200.0,       6200.0,       6.2e13,           10,           31,           10,        10.00)
+lower_v1_r10 <- c(          58,          305,         0.15,           20,       2800.0,       9500.0,       5800.0,       5.7e13,            0,           20,            0,            0)
+par_v1_r10   <- c(6.327477e+01, 3.190987e+02, 8.449871e-01, 2.788848e+01, 3.310345e+03, 9.901638e+03, 6.396174e+03, 5.940024e+13, 6.474602e+00, 2.790773e+01, 5.591152e+00, 1.393939e+00)
+upper_v1_r10 <- c(          68,          335,         1.05,           35,       3700.0,      10400.0,       6600.0,       6.2e13,           12,           34,           10,        15.00)
 
 # Run the fitter
 pheno_fit_v1_r10 <- phenologyFitter(par.guess = par_v1_r10,
-                                   modelfn = PhenoFlex_GDHwrapper,
-                                   bloomJDays = pheno_v1[pheno_v1$Year %in% calibration_seasons_v1, "pheno"],
-                                   SeasonList = season_list_v1,
-                                   lower = lower_v1_r10,
-                                   upper = upper_v1_r10,
-                                   control = list(smooth = FALSE,
-                                                  verbose = FALSE,
-                                                  maxit = 6000,
-                                                  nb.stop.improvement = 300))
+                                    modelfn = PhenoFlex_GDHwrapper,
+                                    bloomJDays = pheno_v1[pheno_v1$Year %in% calibration_seasons_v1, "pheno"],
+                                    SeasonList = season_list_v1,
+                                    lower = lower_v1_r10,
+                                    upper = upper_v1_r10,
+                                    control = list(smooth = FALSE,
+                                                   verbose = FALSE,
+                                                   maxit = 10000,
+                                                   nb.stop.improvement = 500))
 
 # Same for version 2 (pheno_fit_v2_r9$model_fit$par)
 #                          yc,           zc,           s1,           Tu,           E0,           E1,           A0,           A1,           Tf,           Tc,           Tb,        slope
-lower_v2_r10 <- c(          33,          330,            0,           22,       3100.0,       9500.0,       5900.0,       5.6e13,            0,           42,            0,            8)
-par_v2_r10   <- c(3.575275e+01, 3.362357e+02, 9.665035e-02, 2.653338e+01, 3.371009e+03, 9.899714e+03, 6.238888e+03, 5.939968e+13, 1.357235e+00, 4.489110e+01, 3.387779e+00, 1.340575e+01)
-upper_v2_r10 <- c(          39,          340,        0.125,           30,       3800.0,      10500.0,       6500.0,       6.3e13,            5,           46,            6,        16.00)
+lower_v2_r10 <- c(          28,          360,         0.05,           20,       2900.0,       9500.0,       5800.0,       5.7e13,            0,           45,            0,            0)
+par_v2_r10   <- c(3.370071e+01, 3.709721e+02, 1.332810e-01, 2.495372e+01, 3.371002e+03, 9.901248e+03, 6.214569e+03, 5.939814e+13, 1.739936e+00, 5.334214e+01, 4.014245e+00, 3.168656e+00)
+upper_v2_r10 <- c(          38,          380,        0.325,           30,       3700.0,      10400.0,       6600.0,       6.2e13,           10,           58,           10,        15.00)
 
 # Run the fitter
 pheno_fit_v2_r10 <- phenologyFitter(par.guess = par_v2_r10,
-                                   modelfn = PhenoFlex_GDHwrapper,
-                                   bloomJDays = pheno_v2[pheno_v2$Year %in% calibration_seasons_v2, "pheno"],
-                                   SeasonList = season_list_v2,
-                                   lower = lower_v2_r10,
-                                   upper = upper_v2_r10,
-                                   control = list(smooth = FALSE,
-                                                  verbose = FALSE,
-                                                  maxit = 7000,
-                                                  nb.stop.improvement = 400))
+                                    modelfn = PhenoFlex_GDHwrapper,
+                                    bloomJDays = pheno_v2[pheno_v2$Year %in% calibration_seasons_v2, "pheno"],
+                                    SeasonList = season_list_v2,
+                                    lower = lower_v2_r10,
+                                    upper = upper_v2_r10,
+                                    control = list(smooth = FALSE,
+                                                   verbose = FALSE,
+                                                   maxit = 10000,
+                                                   nb.stop.improvement = 500))
 
 # Some intermediate results
 # Generate a data set to collect the outputs of the fitting for the calibration data 
@@ -919,11 +919,11 @@ mean(abs(out_df_v2_r10$Error))
 
 # Compute the AICc
 aic_fit_v1_r10 <- (2 * length(par_v1_r10)) + (length(calibration_seasons_v1) * 
-                                              log(pheno_fit_v1_r10$model_fit$value / length(calibration_seasons_v1))) + ((2 * length(par_v1_r10)^2 + 2 * length(par_v1_r10)) /
-                                                                                                                          length(calibration_seasons_v1) - length(par_v1_r10) - 1)
+                                                log(pheno_fit_v1_r10$model_fit$value / length(calibration_seasons_v1))) + ((2 * length(par_v1_r10)^2 + 2 * length(par_v1_r10)) /
+                                                                                                                             length(calibration_seasons_v1) - length(par_v1_r10) - 1)
 aic_fit_v2_r10 <- (2 * length(par_v2_r10)) + (length(calibration_seasons_v2) * 
-                                              log(pheno_fit_v2_r10$model_fit$value / length(calibration_seasons_v2))) + ((2 * length(par_v2_r10)^2 + 2 * length(par_v2_r10)) /
-                                                                                                                          length(calibration_seasons_v2) - length(par_v2_r10) - 1)
+                                                log(pheno_fit_v2_r10$model_fit$value / length(calibration_seasons_v2))) + ((2 * length(par_v2_r10)^2 + 2 * length(par_v2_r10)) /
+                                                                                                                             length(calibration_seasons_v2) - length(par_v2_r10) - 1)
 
 # Plot the observed versus predicted values
 ggplot(out_df_v1_r10, aes(pheno, Predicted)) +
@@ -938,20 +938,31 @@ ggplot(out_df_v2_r10, aes(pheno, Predicted)) +
 
 # Finishing the fitting replications
 
+# After 10 extensive fitting procedures (see maxit and nb.stop.improvement parameters in fitting 10), we observed the
+# smallest RMSEP after run 9. We therefore, will proceed using the set of parameters fitted by the model in that run
 
 
+
+
+# Validation ####
 # Compute the bloom dates for the validation datasets
 # Generate a validation data set with phenology data
 valid_df_v1 <- pheno_v1[pheno_v1$Year %in% validation_seasons, ]
 valid_df_v2 <- pheno_v2[pheno_v2$Year %in% validation_seasons, ]
 
+# Add a third validation which is predicting the bloom dates in the five marginal seasons using the parameters fitted
+# when calibrating the model WHITOUT these seasons. This is to test how capable the version excluding the marginal seasons is
+# to predict phenology in marginal environments
+valid_df_v2_marg_seasons <- pheno_v1[which(!(pheno_v1$Year %in% pheno_v2$Year)), ]
+
 # Generate a list of seasons with weather data for the validation procedure
 valid_season_list <- genSeasonList(data, mrange = c(9, 7), years = validation_seasons)
+valid_season_list_marg_seasons <- genSeasonList(data, mrange = c(9, 7), years = valid_df_v2_marg_seasons$Year)
 
 # Estimate the bloom dates with PhenoFlexGDHwrapper
 for (i in 1 : nrow(valid_df_v1)) {
   
-  valid_df_v1[i, "Predicted"] <- PhenoFlex_GDHwrapper(valid_season_list[[i]], pheno_fit_v1_r10$par)
+  valid_df_v1[i, "Predicted"] <- PhenoFlex_GDHwrapper(valid_season_list[[i]], pheno_fit_v1_r9$par)
 }
 
 # The same for the second version
@@ -960,17 +971,27 @@ for (i in 1 : nrow(valid_df_v2)) {
   valid_df_v2[i, "Predicted"] <- PhenoFlex_GDHwrapper(valid_season_list[[i]], pheno_fit_v2_r9$par)
 }
 
+# Same for the marginal seasons validation
+for (i in 1 : nrow(valid_df_v2_marg_seasons)) {
+  
+  valid_df_v2_marg_seasons[i, "Predicted"] <- PhenoFlex_GDHwrapper(valid_season_list_marg_seasons[[i]],
+                                                                   pheno_fit_v2_r9$par)
+}
+
 # Compute the error (observed - predicted)
 valid_df_v1[["Error"]] <- valid_df_v1$pheno - valid_df_v1$Predicted
 valid_df_v2[["Error"]] <- valid_df_v2$pheno - valid_df_v2$Predicted
+valid_df_v2_marg_seasons[["Error"]] <- valid_df_v2_marg_seasons$pheno - valid_df_v2_marg_seasons$Predicted
 
 # Estimate the RMSEP
 RMSEP_valid_v1 <- RMSEP(valid_df_v1$Predicted, valid_df_v1$pheno, na.rm = TRUE)
 RMSEP_valid_v2 <- RMSEP(valid_df_v2$Predicted, valid_df_v2$pheno, na.rm = TRUE)
+RMSEP_valid_v2_marg_seasons <- RMSEP(valid_df_v2_marg_seasons$Predicted, valid_df_v2_marg_seasons$pheno, na.rm = TRUE)
 
 # Compute de RPIQ for the validation set
 RPIQ_valid_v1 <- RPIQ(valid_df_v1$Predicted, valid_df_v1$pheno)
 RPIQ_valid_v2 <- RPIQ(valid_df_v2$Predicted, valid_df_v2$pheno)
+RPIQ_valid_v2_marg_seasons <- RPIQ(valid_df_v2_marg_seasons$Predicted, valid_df_v2_marg_seasons$pheno)
 
 # Plot the calibrated and validated 
 ggplot(out_df_v1_r10, aes(pheno, Predicted)) +
@@ -980,13 +1001,26 @@ ggplot(out_df_v1_r10, aes(pheno, Predicted)) +
   geom_abline(intercept = 0, slope = 1) +
   labs(x = "Observed")
 
-ggplot(out_df_v2_r9, aes(pheno, Predicted)) +
-  geom_point() +
-  geom_point(data = valid_df_v2, aes(pheno, Predicted), 
-             color = "red") + 
-  geom_abline(intercept = 0, slope = 1) +
-  labs(x = "Observed")
 
+ggplot(out_df_v2_r10, aes(pheno, Predicted)) +
+  geom_point(shape = 1, size = 2) +
+  geom_point(data = valid_df_v2, aes(pheno, Predicted, color = "'Normal' seasons"),
+             size = 2.5) +
+  geom_point(data = valid_df_v2_marg_seasons, aes(pheno, Predicted, color = "Marginal seasons"),
+             size = 2.5) +
+  scale_color_manual(values = c("firebrick", "cadetblue")) +
+  geom_abline(intercept = 0, slope = 1) +
+  labs(x = "Observed",
+       title = "Framework excluding the marginal seasons in calibration",
+       color = "Validation approach") +
+  theme_bw()
+
+ggsave("figures/validation_approach_for_excl_marginal_seasons.png")
+
+
+
+
+# Bootstrap ####
 # Implement the bootstrap of residuals for estimating errors. In this process, I implemented the idea based on my own
 # understanding after looking at the PhenoFlex vignette. This means that I would need to check the main concept with the
 # authors of the original paper. In brief, I did bootstrap the residuals of the calibration fitting to estimate the
@@ -995,7 +1029,7 @@ ggplot(out_df_v2_r9, aes(pheno, Predicted)) +
 # across boot.R values.
 
 # Bootstrap the calibration fitting to obtain boot.R sets of parameters
-fit_res_boot_v1 <- bootstrap.phenologyFit(pheno_fit_v1_r10,
+fit_res_boot_v1 <- bootstrap.phenologyFit(pheno_fit_v1_r9,
                                           boot.R = 10,
                                           lower = lower,
                                           upper = upper,
@@ -1031,8 +1065,8 @@ for (k in 1 : length(fit_res_boot_v1$res)) {
   name <- paste0("Pred_Boot_", k)
   
   for (i in 1 : nrow(valid_df_v1)) {
-  
-  valid_df_v1[i, name] <- PhenoFlex_GDHwrapper(valid_season_list[[i]], par_k)
+    
+    valid_df_v1[i, name] <- PhenoFlex_GDHwrapper(valid_season_list[[i]], par_k)
   }
 }
 
@@ -1060,20 +1094,15 @@ valid_df_v2 <- valid_df_v2 %>% pivot_longer(starts_with("Pred_Boot_")) %>% group
   summarise(SD_boot = sd(value))
 
 # Generate a data set that contains all data for easy-faceting
-out_df <- bind_rows("PhenoFlex[incl.~marginal~seasons]" = out_df_v1_r10,
-                    "PhenoFlex[excl.~marginal~seasons]" = out_df_v2_r10, .id = "Version")
-valid_df <- bind_rows("PhenoFlex[incl.~marginal~seasons]" = valid_df_v1,
-                      "PhenoFlex[excl.~marginal~seasons]" = valid_df_v2, .id = "Version")
+out_df <- bind_rows("PhenoFlex[all]" = out_df_v1_r9,
+                    "PhenoFlex[excluded]" = out_df_v2_r9, .id = "Version")
+valid_df <- bind_rows("PhenoFlex[all]" = valid_df_v1,
+                      "PhenoFlex[excluded]" = valid_df_v2, .id = "Version")
 
 # Create a data set that computes de RSMEP for each facet
 RMSEP_text <- data.frame(pheno = 48,
                          Predicted = c(153, 148, 143, 138, 133, 153, 148, 143, 138, 133, 133),
-                         Version = c("PhenoFlex[incl.~marginal~seasons]", "PhenoFlex[incl.~marginal~seasons]",
-                                     "PhenoFlex[incl.~marginal~seasons]", "PhenoFlex[incl.~marginal~seasons]",
-                                     "PhenoFlex[incl.~marginal~seasons]",
-                                     "PhenoFlex[excl.~marginal~seasons]", "PhenoFlex[excl.~marginal~seasons]",
-                                     "PhenoFlex[excl.~marginal~seasons]", "PhenoFlex[excl.~marginal~seasons]",
-                                     "PhenoFlex[excl.~marginal~seasons]", "PhenoFlex[excl.~marginal~seasons]"),
+                         Version = c(rep("PhenoFlex[all]", 5), rep("PhenoFlex[excluded]", 6)),
                          Dataset = c("Calibration", "Validation", "Calibration", "Validation",
                                      "Calibration", "Validation", "Calibration", "Validation",
                                      "Calibration", "Validation", "Validation"))
@@ -1088,23 +1117,25 @@ ggplot() +
   geom_pointrange(data = valid_df,
                   aes(pheno, Predicted, ymin = Predicted - SD_boot, ymax = Predicted + SD_boot, color = "Validation"), 
                   size = 0.3, fatten = 0.1) +
-  geom_text(data = RMSEP_text,  aes(pheno, Predicted),
-            label = c(bquote("RMSE"["calib"]*" : "*.(round(RMSEP_calib_v1_r10, 1))),
+  geom_text(data = RMSEP_text,  aes(pheno - 5, Predicted + 7),
+            label = c(bquote("RMSE"["calib"]*" : "*.(round(RMSEP_calib_v1_r9, 1))),
                       bquote("RMSE"["valid"]*" : "*.(round(RMSEP_valid_v1, 1))),
-                      bquote("RPIQ"["calib"]*"   : "*.(round(RPIQ_calib_v1_r10, 1))),
+                      bquote("RPIQ"["calib"]*"   : "*.(round(RPIQ_calib_v1_r9, 1))),
                       bquote("RPIQ"["valid"]*"   : "*.(round(RPIQ_valid_v1, 1))),
-                      bquote("AICc"["calib"]*"    : "*.(round(aic_fit_v1_r10, 1))),
-                      bquote("RMSE"["calib"]*" : "*.(round(RMSEP_calib_v2_r10, 1))),
+                      bquote("AICc"["calib"]*"    : "*.(round(aic_fit_v1_r9, 1))),
+                      bquote("RMSE"["calib"]*" : "*.(round(RMSEP_calib_v2_r9, 1))),
                       bquote("RMSE"["valid"]*" : "*.(round(RMSEP_valid_v2, 1))),
                       bquote("RPIQ"["calib"]*"   : "*.(round(RPIQ_calib_v2_r9, 1))),
                       bquote("RPIQ"["valid"]*"   : "*.(round(RPIQ_valid_v2, 1))),
-                      bquote("AICc"["calib"]*"    : "*.(round(aic_fit_v2_r10, 1))),
+                      bquote("AICc"["calib"]*"    : "*.(sprintf("%0.1f", round(aic_fit_v2_r9, 1)))),
                       expression("")),
             hjust = 0, size = 2.5, fontface = "italic") +
-  scale_x_continuous(breaks = seq(50, 125, 25),
-                     labels = function (x) format(dormancyR::JDay_to_date(x, 2021), "%b %d")) +
-  scale_y_continuous(breaks = seq(60, 150, 30),
-                     labels = function (x) format(dormancyR::JDay_to_date(x, 2021), "%b %d")) +
+  scale_x_continuous(breaks = seq(39, 159, 30),
+                     labels = function (x) format(dormancyR::JDay_to_date(x, 2021), "%b %d"),
+                     limits = c(39, 160)) +
+  scale_y_continuous(breaks = seq(39, 159, 30),
+                     labels = function (x) format(dormancyR::JDay_to_date(x, 2021), "%b %d"),
+                     limits = c(39, 160)) +
   scale_shape_manual(values = 1) +
   scale_color_manual(values = "deepskyblue4") +
   labs(x = "Observed bloom date",
@@ -1112,7 +1143,7 @@ ggplot() +
        color = NULL,
        shape = NULL,
        fill = NULL) +
-  facet_grid(. ~ factor(Version, levels = c("PhenoFlex[incl.~marginal~seasons]", "PhenoFlex[excl.~marginal~seasons]")),
+  facet_grid(. ~ factor(Version, levels = c("PhenoFlex[all]", "PhenoFlex[excluded]")),
              labeller = label_parsed) +
   theme_bw() +
   theme(strip.background = element_blank(),
@@ -1121,10 +1152,11 @@ ggplot() +
         legend.background = element_blank(),
         legend.box.background = element_blank(),
         legend.key = element_rect(fill = NA),
-        legend.text = element_text(size = 8))
+        legend.text = element_text(size = 8),
+        axis.text.x = element_text(angle = 30, hjust = 0.8, vjust = 1))
 
 # Save the final plot to folder
-ggsave("figures/model_performance_final_d.png", width = 12, height = 10, units = "cm", dpi = 600)
+ggsave("figures/model_performance_revised.png", width = 14, height = 12, units = "cm", dpi = 600)
 
 
 
@@ -1133,21 +1165,21 @@ ggsave("figures/model_performance_final_d.png", width = 12, height = 10, units =
 source("code/00_helper_functions.R")
 
 # Create a data set with theoretical temperatures and heat and chill responses
-temp_response_v1 <- data.frame(Temp = seq(-3, 48, 0.1),
-                               Chill_res = gen_bell(pheno_fit_v1_r10$par, seq(-3, 48, 0.1)),
-                               Heat_res = GDH_response(pheno_fit_v1_r10$par, seq(-3, 48, 0.1)))
+temp_response_v1 <- data.frame(Temp = seq(-5, 60, 0.1),
+                               Chill_res = gen_bell(pheno_fit_v1_r9$par, seq(-5, 60, 0.1)),
+                               Heat_res = GDH_response(pheno_fit_v1_r9$par, seq(-5, 60, 0.1)))
 
-temp_response_v2 <- data.frame(Temp = seq(-3, 48, 0.1),
-                               Chill_res = gen_bell(pheno_fit_v2_r9$par, seq(-3, 48, 0.1)),
-                               Heat_res = GDH_response(pheno_fit_v2_r9$par, seq(-3, 48, 0.1)))
-  
+temp_response_v2 <- data.frame(Temp = seq(-5, 60, 0.1),
+                               Chill_res = gen_bell(pheno_fit_v2_r9$par, seq(-5, 60, 0.1)),
+                               Heat_res = GDH_response(pheno_fit_v2_r9$par, seq(-5, 60, 0.1)))
+
 # Pivot longer to generate a panel plot
 temp_response_v1 <- pivot_longer(temp_response_v1, -Temp, names_to = "Var", values_to = "Response")
 temp_response_v2 <- pivot_longer(temp_response_v2, -Temp, names_to = "Var", values_to = "Response")
 
 # Generate a single data set
-temp_response <- bind_rows("PhenoFlex[incl.~marginal~seasons]" = temp_response_v1,
-                           "PhenoFlex[excl.~marginal~seasons]" = temp_response_v2,
+temp_response <- bind_rows("PhenoFlex[all]" = temp_response_v1,
+                           "PhenoFlex[excluded]" = temp_response_v2,
                            .id = "version")
 
 # Implement the plot. Generate two plots and then merge them to overcome the issue produced by
@@ -1157,12 +1189,12 @@ temp_response <- bind_rows("PhenoFlex[incl.~marginal~seasons]" = temp_response_v
 chill_response_plot <- ggplot(filter(temp_response, Var == "Chill_res"), aes(Temp, Response)) +
   geom_line(size = 1, color = "blue4") +
   scale_y_continuous(expand = expansion(mult = c(0.02, 0.02))) +
-  scale_x_continuous(limits = c(-3, 27),
-                     labels = function (x) paste0(x, "°C")) +
+  scale_x_continuous(limits = c(-5, 25),
+                     labels = function (x) paste0(x, " °C")) +
   scale_color_manual(values = c("blue", "red")) +
   labs(y = "Arbitrary units") +
-  facet_grid(factor(version, levels = c("PhenoFlex[incl.~marginal~seasons]",
-                                        "PhenoFlex[excl.~marginal~seasons]")) ~
+  facet_grid(factor(version, levels = c("PhenoFlex[all]",
+                                        "PhenoFlex[excluded]")) ~
                factor(Var, labels = c("Chill response"))) +
   theme_bw() +
   theme(axis.title.x = element_blank(),
@@ -1174,10 +1206,11 @@ chill_response_plot <- ggplot(filter(temp_response, Var == "Chill_res"), aes(Tem
 heat_response_plot <- ggplot(filter(temp_response, Var == "Heat_res"), aes(Temp, Response, color = Var)) +
   geom_line(size = 1, color = "firebrick") +
   scale_y_continuous(expand = expansion(mult = c(0.02, 0.02))) +
-  scale_x_continuous(labels = function (x) paste0(x, "°C")) +
+  scale_x_continuous(labels = function (x) paste0(x, " °C")) +
   scale_color_manual(values = c("blue", "red")) +
   labs(y = "Arbitrary units") +
-  facet_grid(factor(version, levels = c("PhenoFlex[incl.~marginal~seasons]", "PhenoFlex[excl.~marginal~seasons]")) ~ 
+  facet_grid(factor(version, levels = c("PhenoFlex[all]",
+                                        "PhenoFlex[excluded]")) ~ 
                factor(Var, labels = c("Heat~response")), labeller = label_parsed) +
   theme_bw() +
   theme(axis.title = element_blank(),
@@ -1189,7 +1222,7 @@ heat_response_plot <- ggplot(filter(temp_response, Var == "Heat_res"), aes(Temp,
   theme(plot.caption = element_text(hjust = 0.5, vjust = 1, size = 11))
 
 # Save the final plot to folder
-ggsave("figures/temp_responses_final_b.png", width = 12, height = 10, units = "cm", dpi = 600)
+ggsave("figures/temp_responses_final_new_ana.png", width = 12, height = 10, units = "cm", dpi = 600)
 
 
 # Compute some metrics for model validation
@@ -1206,17 +1239,17 @@ IQR(valid_df_v1$Error)
 IQR(valid_df_v2$Error)
 
 # Create a small data frame for adding the metrics to the text
-metrics_text <- data.frame(Version = c("PhenoFlex[incl.~marginal~seasons]", "PhenoFlex[incl.~marginal~seasons]",
-                                       "PhenoFlex[excl.~marginal~seasons]", "PhenoFlex[excl.~marginal~seasons]",
-                                       "PhenoFlex[excl.~marginal~seasons]"),
+metrics_text <- data.frame(Version = c("PhenoFlex[all]", "PhenoFlex[all]",
+                                       "PhenoFlex[excluded]", "PhenoFlex[excluded]",
+                                       "PhenoFlex[excluded]"),
                            y = c(9, 8.5, 9, 8.5, 8))
 
 # Plot the residuals to test for model quality
 ggplot(valid_df, aes(Version, Error, fill = Version)) +
   geom_hline(yintercept = 0, alpha = 0.45, linetype = 2) +
   geom_boxplot(width = 0.25, size = 0.2, outlier.size = 0.5) +
-  scale_x_discrete(limits = c("PhenoFlex[incl.~marginal~seasons]",
-                              "PhenoFlex[excl.~marginal~seasons]")) +
+  scale_x_discrete(limits = c("PhenoFlex[all]",
+                              "PhenoFlex[excluded]")) +
   geom_text(data = metrics_text, aes(Version, y),
             label = c(bquote("Median error"*"      : "*.(round(med_residuals_v1, 1))),
                       bquote("Mean abs. error"*" : "*.(round(mean_abs_error_v1, 1))),
@@ -1225,10 +1258,10 @@ ggplot(valid_df, aes(Version, Error, fill = Version)) +
                       expression("")),
             size = 1.7, hjust = 0, nudge_x = -0.35) +
   scale_fill_manual(values = c("cadetblue", "firebrick"),
-                    breaks = c("PhenoFlex[incl.~marginal~seasons]",
-                               "PhenoFlex[excl.~marginal~seasons]"),
-                    labels = c(bquote("PhenoFlex"["incl. marginal seasons"]),
-                               bquote("PhenoFlex"["excl. marginal seasons"]))) +
+                    breaks = c("PhenoFlex[all]",
+                               "PhenoFlex[excluded]"),
+                    labels = c(bquote("PhenoFlex"["all"]),
+                               bquote("PhenoFlex"["excluded"]))) +
   labs(x = NULL,
        y = "Residuals (days)",
        fill = NULL) +
@@ -1240,5 +1273,14 @@ ggplot(valid_df, aes(Version, Error, fill = Version)) +
         legend.background = element_blank(),
         legend.text = element_text(size = 6))
 
-ggsave("figures/validation_errors_b.png", dpi = 600, width = 5, height = 6, units = "cm")  
+ggsave("figures/validation_errors_b_new_ana.png", dpi = 600, width = 5, height = 6, units = "cm")  
+
+# Estimate the RMSE for the "null model". This will be implemented by computing the average bloom in the calibration data sets plus
+# the estimation of difference between this average and the dates in the validation data sets
+
+average_bloom_v1 <- mean(pheno_fit_v1_r10$bloomJDays)
+average_bloom_v2 <- mean(pheno_fit_v2_r10$bloomJDays)
+
+RMSE_null_v1 <- chillR::RMSEP(average_bloom_v1, valid_df_v1$pheno)  
+RMSE_null_v2 <- chillR::RMSEP(average_bloom_v2, valid_df_v2$pheno)  
 

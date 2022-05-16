@@ -49,3 +49,7 @@ vignettes/*.pdf
 
 # RData files
 *.RData
+
+# Some internal code files
+/code/01_phenology_fitting_first_draft.R
+/code/99_internal.R
